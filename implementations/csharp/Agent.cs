@@ -6,6 +6,17 @@ using Azure.AI.OpenAI;
 
 namespace AgentPlatform
 {
+    public class BearerTokenPolicy : Azure.Core.Pipeline.HttpPipelineSynchronousPolicy
+    {
+        private readonly string _token;
+        public BearerTokenPolicy(string token) => _token = token;
+        
+        public override void OnSendingRequest(Azure.Core.HttpMessage message)
+        {
+            message.Request.Headers.SetValue("Authorization", $"Bearer {_token}");
+        }
+    }
+
     public class Agent
     {
         private readonly OpenAIClient _client;
@@ -13,9 +24,24 @@ namespace AgentPlatform
         private readonly List<ChatRequestMessage> _messages = new();
         private readonly ToolRegistry _registry;
 
-        public Agent(string apiKey, ToolRegistry registry, string model = "gpt-4-turbo")
+        public Agent(string apiKey, ToolRegistry registry, string model = "gpt-4o", string? endpoint = null, string? jwtToken = null)
         {
-            _client = new OpenAIClient(apiKey, new OpenAIClientOptions());
+            var options = new OpenAIClientOptions();
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                options.AddPolicy(new BearerTokenPolicy(jwtToken), Azure.Core.HttpPipelinePosition.PerCall);
+            }
+
+            if (!string.IsNullOrEmpty(endpoint))
+            {
+                // Azure OpenAI initialization
+                _client = new OpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey), options);
+            }
+            else
+            {
+                // Standard OpenAI initialization
+                _client = new OpenAIClient(apiKey, options);
+            }
             _model = model;
             _registry = registry;
             InitializeSystemPrompt();
@@ -35,15 +61,10 @@ namespace AgentPlatform
 
             while (true)
             {
-                var options = new ChatCompletionsOptions(_model)
+                var options = new ChatCompletionsOptions(_model, _messages)
                 {
                     Temperature = 0.7f
                 };
-
-                foreach (var msg in _messages)
-                {
-                    options.Messages.Add(msg);
-                }
 
                 var tools = _registry.GetToolSchemas();
                 foreach (var tool in tools)
