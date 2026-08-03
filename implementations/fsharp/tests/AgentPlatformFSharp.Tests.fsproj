@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="AgentPipelineTests.fs" />
+    <Compile Include="SequentialToolWorkflowSpec.fs" />
   </ItemGroup>
 
   <ItemGroup>

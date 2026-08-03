@@ -111,7 +111,7 @@ namespace AgentPlatform
             return result;
         }
 
-        public async Task<TurnResult> RunAsync(string userInput)
+        public async Task<TurnResult> RunAsync(string userInput, Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>>? customLlmCaller = null)
         {
             // --- Phase 1: Turn Prologue ---
             Console.WriteLine($"\nUser: {userInput}");
@@ -152,19 +152,26 @@ namespace AgentPlatform
                 {
                     try
                     {
-                        var options = new ChatCompletionsOptions(_model, preparedMessages)
-                        {
-                            Temperature = 0.7f
-                        };
-
                         var toolDefinitions = _registry.GetToolSchemas();
-                        foreach (var toolDef in toolDefinitions)
+                        if (customLlmCaller != null)
                         {
-                            options.Tools.Add(new ChatCompletionsFunctionToolDefinition(toolDef));
+                            completions = await customLlmCaller(toolDefinitions.ToList(), preparedMessages);
                         }
+                        else
+                        {
+                            var options = new ChatCompletionsOptions(_model, preparedMessages)
+                            {
+                                Temperature = 0.7f
+                            };
 
-                        var response = await _client.GetChatCompletionsAsync(options);
-                        completions = response.Value;
+                            foreach (var toolDef in toolDefinitions)
+                            {
+                                options.Tools.Add(new ChatCompletionsFunctionToolDefinition(toolDef));
+                            }
+
+                            var response = await _client.GetChatCompletionsAsync(options);
+                            completions = response.Value;
+                        }
                         break;
                     }
                     catch (Exception ex)
