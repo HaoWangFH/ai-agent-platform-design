@@ -35,3 +35,7 @@ type ToolRegistry() =
                 let avail = tools.Keys |> String.concat ", "
                 return sprintf "Error: Tool '%s' is not registered. Available tools: %s" name avail
         }
+
+    /// Exposes tool execution as a composable, partially applicable function (ToolExecutor)
+    member self.AsExecutor : ToolExecutor =
+        fun name argsJson -> self.ExecuteToolAsync(name, argsJson)

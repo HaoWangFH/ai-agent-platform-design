@@ -34,3 +34,21 @@ type ToolDefinition = {
     ParametersJson: string
     Handler: string -> Async<string>
 }
+
+/// Immutable turn state passed through pure function pipelines
+type TurnState = {
+    Messages: ChatRequestMessage list
+    ApiCalls: int
+    EmptyContentRetries: int
+    InterruptRequested: bool
+    Config: AgentConfig
+}
+
+/// Control flow result for composable pipeline steps
+type StepResult<'State, 'Result> =
+    | Continue of 'State
+    | Exit of 'Result
+
+/// Composable function type signatures for dependency injection and partial application
+type LlmCaller = FunctionDefinition list -> ChatRequestMessage list -> Async<Result<ChatCompletions, string>>
+type ToolExecutor = string -> string -> Async<string>
