@@ -1,8 +1,9 @@
 # AI Agent Platform Design
 
-This repository contains the architectural analysis, abstract conversation loop specification, and parallel implementations of a lightweight AI Agent platform. The goal is to compare different programming languages and their paradigms when building the core Agent Loop.
+This repository contains the architectural analysis, abstract conversation loop specification, parity progress tracking, and parallel implementations of a lightweight AI Agent platform. The goal is to compare different programming languages and their paradigms when building the core Agent Loop.
 
 ## Structure / 目录结构
+- `docs/HERMES_PARITY_REPORT.md` ([中文版 docs/HERMES_PARITY_REPORT.zh.md](docs/HERMES_PARITY_REPORT.zh.md)): Hermes Agent Feature Parity & Progress Report (47% Parity, 14 implemented / 16 remaining).
 - `docs/CONVERSATION_LOOP_WORKFLOW.md` ([中文版 docs/CONVERSATION_LOOP_WORKFLOW.zh.md](docs/CONVERSATION_LOOP_WORKFLOW.zh.md)): The abstract 4-phase Agent Conversation Loop workflow specification (Hermes Agent architecture).
 - `architecture-analysis.zh.md`: The original architecture analysis document comparing Hermes Agent and Claude Code.
 - `spec/`: Language-agnostic specifications for the abstract agent loop, tool definitions, and design mapping.
