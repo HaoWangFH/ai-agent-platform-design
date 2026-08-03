@@ -6,14 +6,42 @@ open System.Text.Json
 
 module Program =
 
+    let loadDotEnv () =
+        let rec findEnv path =
+            if File.Exists(path) then Some path
+            else
+                let parent = Directory.GetParent(Path.GetDirectoryName(Path.GetFullPath(path)))
+                if isNull parent then None
+                else findEnv (Path.Combine(parent.FullName, ".env"))
+
+        match findEnv ".env" with
+        | Some envPath ->
+            printfn "Loaded environment from %s" envPath
+            File.ReadAllLines(envPath)
+            |> Array.iter (fun line ->
+                if not (String.IsNullOrWhiteSpace(line)) && not (line.StartsWith("#")) then
+                    let parts = line.Split('=', 2)
+                    if parts.Length = 2 then
+                        Environment.SetEnvironmentVariable(parts.[0].Trim(), parts.[1].Trim().Trim('"'))
+            )
+        | None -> ()
+
     [<EntryPoint>]
     let main argv =
+        loadDotEnv ()
+
         let apiKey = 
             match Environment.GetEnvironmentVariable("AZURE_API_KEY") with
             | null | "" -> Environment.GetEnvironmentVariable("OPENAI_API_KEY")
             | k -> k
 
-        let effectiveKey = if String.IsNullOrEmpty apiKey then "dummy_key" else apiKey
+        let isMockMode = String.IsNullOrEmpty apiKey
+        let effectiveKey = if isMockMode then "dummy_key" else apiKey
+
+        if isMockMode then
+            printfn "⚠️ Warning: No OPENAI_API_KEY or AZURE_API_KEY found in environment or .env file."
+            printfn "   To make live LLM API calls, set OPENAI_API_KEY in your environment or create a .env file."
+            printfn "   Running unit tests via 'dotnet test' uses simulated mock LLMs and does not require an API key.\n"
 
         printfn "Initializing F# Agent..."
 
@@ -83,7 +111,14 @@ module Program =
                 elif not (String.IsNullOrEmpty trimmed) then
                     try
                         let result = agent.RunAsync(trimmed) |> Async.RunSynchronously
-                        ignore result
+                        if result.Failed then
+                            match result.Error with
+                            | Some err when isMockMode ->
+                                printfn "❌ API Call Failed: %s" err
+                                printfn "💡 Hint: Please set OPENAI_API_KEY environment variable or create a .env file with OPENAI_API_KEY=your_key to connect to live OpenAI/Azure endpoints."
+                            | Some err ->
+                                printfn "❌ API Call Failed: %s" err
+                            | None -> ()
                     with ex ->
                         printfn "Error: %s" ex.Message
 
