@@ -1,12 +1,6 @@
 .env
-implementations/csharp/bin/
-implementations/csharp/obj/
-implementations/csharp/tests/bin/
-implementations/csharp/tests/obj/
-implementations/fsharp/bin/
-implementations/fsharp/obj/
-implementations/fsharp/tests/bin/
-implementations/fsharp/tests/obj/
+**/bin/
+**/obj/
 node_modules/
 package-lock.json
 __pycache__/
