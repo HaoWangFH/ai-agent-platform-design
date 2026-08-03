@@ -118,7 +118,6 @@ namespace AgentPlatform
             _messages.Add(new ChatRequestUserMessage(userInput));
 
             int apiCalls = 0;
-            _interruptRequested = false;
             int emptyContentRetries = 0;
 
             // --- Phase 2: Main Conversation Loop ---
@@ -127,6 +126,7 @@ namespace AgentPlatform
                 // 2.1 Pre-API Checks
                 if (_interruptRequested)
                 {
+                    _interruptRequested = false; // Reset after handling
                     Console.WriteLine("  [Turn Exit] Turn interrupted by user.");
                     return new TurnResult
                     {

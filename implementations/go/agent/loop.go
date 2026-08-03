@@ -66,14 +66,14 @@ func (a *Agent) RequestInterrupt() {
 	a.interruptRequested = true
 }
 
-func (a *Agent) prepareApiMessages(msgs []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
+func (a *Agent) PrepareApiMessages(msgs []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
 	// Phase 2.2: Shallow copy of messages slice
 	apiMsgs := make([]openai.ChatCompletionMessage, len(msgs))
 	copy(apiMsgs, msgs)
 	return apiMsgs
 }
 
-func (a *Agent) compressContextIfNeeded(msgs []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
+func (a *Agent) CompressContextIfNeeded(msgs []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
 	// Phase 2.3: Context window protection
 	if len(msgs) <= a.ContextWindowLimit {
 		return msgs
@@ -110,13 +110,13 @@ func (a *Agent) Run(ctx context.Context, userInput string) (*TurnResult, error) 
 	})
 
 	apiCalls := 0
-	a.interruptRequested = false
 	emptyContentRetries := 0
 
 	// --- Phase 2: Main Conversation Loop ---
 	for apiCalls < a.MaxIterations {
 		// 2.1 Pre-API Checks
 		if a.interruptRequested {
+			a.interruptRequested = false
 			fmt.Println("  [Turn Exit] Turn interrupted by user.")
 			return &TurnResult{
 				FinalResponse: "",
@@ -130,8 +130,8 @@ func (a *Agent) Run(ctx context.Context, userInput string) (*TurnResult, error) 
 		apiCalls++
 
 		// 2.2 & 2.3 Message Preparation and Context Compression
-		preparedMessages := a.prepareApiMessages(a.messages)
-		preparedMessages = a.compressContextIfNeeded(preparedMessages)
+		preparedMessages := a.PrepareApiMessages(a.messages)
+		preparedMessages = a.CompressContextIfNeeded(preparedMessages)
 
 		// 2.4 Inner Retry Loop for LLM API Call
 		var resp openai.ChatCompletionResponse

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "test": "ts-node -e \"require('./tests/agent.test.ts')\""
   },
   "dependencies": {
     "openai": "^4.28.0",

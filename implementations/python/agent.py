@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
 from openai import OpenAI
@@ -59,19 +59,12 @@ class Agent:
         api_messages = []
         for msg in messages:
             api_msg = msg.copy()
-            # Strip internal metadata fields if present
             api_msg.pop("_internal_id", None)
             api_messages.append(api_msg)
         return api_messages
 
     def _compress_context_if_needed(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Phase 2.3: Context window protection.
-        
-        Trims middle history if messages exceed context_window_limit while preserving:
-        - Index 0: System Prompt
-        - Index 1: Initial User Prompt (if present)
-        - Last N: Recent conversation history
-        """
+        """Phase 2.3: Context window protection."""
         if len(messages) <= self.context_window_limit:
             return messages
 
@@ -81,7 +74,6 @@ class Agent:
         recent_count = self.context_window_limit - 3
         recent_messages = messages[-recent_count:]
 
-        # Ensure recent_messages starts with a valid role (not an orphaned tool result)
         while recent_messages and recent_messages[0].get("role") == "tool":
             recent_messages.pop(0)
 
@@ -99,13 +91,13 @@ class Agent:
         self.messages.append({"role": "user", "content": user_input})
         
         api_call_count = 0
-        self._interrupt_requested = False
         empty_content_retries = 0
 
         # --- Phase 2: Main Conversation Loop ---
         while api_call_count < self.max_iterations:
             # 2.1 Pre-API Checks
             if self._interrupt_requested:
+                self._interrupt_requested = False  # Reset flag after handling
                 print("  [Turn Exit] Turn interrupted by user.")
                 return TurnResult(
                     final_response="",
@@ -147,8 +139,6 @@ class Agent:
 
             message = response.choices[0].message
             message_dict = message.model_dump(exclude_unset=True)
-            
-            # Append assistant message to canonical history
             self.messages.append(message_dict)
 
             # 2.6 Tool Call Execution Path
@@ -157,7 +147,6 @@ class Agent:
                     name = tool_call.function.name
                     call_id = tool_call.id
                     
-                    # Validate tool exists in registry (Self-correction path)
                     available_tools = list(registry._tools.keys())
                     if name not in registry._tools:
                         error_msg = f"Error: Tool '{name}' is not registered. Available tools: {available_tools}"
@@ -170,7 +159,6 @@ class Agent:
                         })
                         continue
 
-                    # Validate JSON arguments
                     try:
                         args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
                     except json.JSONDecodeError as json_err:
@@ -186,7 +174,6 @@ class Agent:
 
                     print(f"  [Tool Execution] {name}({args})")
                     
-                    # Execute tool with exception handling
                     try:
                         result = registry.execute_tool(name, args)
                         print(f"  [Tool Result] {result}")
@@ -200,14 +187,11 @@ class Agent:
                         "name": name,
                         "content": str(result),
                     })
-                
-                # Continue loop to send tool results back to LLM
                 continue
 
             # 2.7 Final Text Response Path
             final_text = (message.content or "").strip()
             
-            # Empty Response Recovery
             if not final_text:
                 if empty_content_retries < 2:
                     empty_content_retries += 1
@@ -222,7 +206,6 @@ class Agent:
 
             print(f"Assistant: {final_text}")
             
-            # --- Phase 4: Turn Finalization ---
             return TurnResult(
                 final_response=final_text,
                 messages=self.messages,
@@ -231,7 +214,6 @@ class Agent:
                 exit_reason="text_response",
             )
 
-        # Exceeded iteration budget
         print(f"  [Turn Exit] Reached max iterations ({self.max_iterations}).")
         return TurnResult(
             final_response="Reached maximum iteration limit.",

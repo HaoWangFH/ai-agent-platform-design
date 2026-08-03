@@ -48,14 +48,14 @@ When asked to perform a task, use the tools to gather information and take actio
     this.interruptRequested = true;
   }
 
-  private prepareApiMessages(
+  public prepareApiMessages(
     msgs: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     // Phase 2.2: Shallow copy for API payload to keep canonical history clean
     return msgs.map((m) => ({ ...m }));
   }
 
-  private compressContextIfNeeded(
+  public compressContextIfNeeded(
     msgs: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
   ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     // Phase 2.3: Context window protection
@@ -91,13 +91,13 @@ When asked to perform a task, use the tools to gather information and take actio
     this.messages.push({ role: 'user', content: userInput });
 
     let apiCalls = 0;
-    this.interruptRequested = false;
     let emptyContentRetries = 0;
 
     // --- Phase 2: Main Conversation Loop ---
     while (apiCalls < this.maxIterations) {
       // 2.1 Pre-API Checks
       if (this.interruptRequested) {
+        this.interruptRequested = false;
         console.log('  [Turn Exit] Turn interrupted by user.');
         return {
           finalResponse: '',
