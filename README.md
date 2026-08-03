@@ -4,6 +4,7 @@ This repository contains the architectural analysis, abstract conversation loop 
 
 ## Structure / 目录结构
 - `docs/HERMES_PARITY_REPORT.md` ([中文版 docs/HERMES_PARITY_REPORT.zh.md](docs/HERMES_PARITY_REPORT.zh.md)): Hermes Agent Feature Parity & Progress Report (47% Parity, 14 implemented / 16 remaining).
+- `docs/HERMES_LOOP_CONDITIONS.md` ([中文版 docs/HERMES_LOOP_CONDITIONS.zh.md](docs/HERMES_LOOP_CONDITIONS.zh.md)): Deep-dive analysis of all 37 loop continue/exit conditions in `conversation_loop.py` with parity matrix.
 - `docs/CONVERSATION_LOOP_WORKFLOW.md` ([中文版 docs/CONVERSATION_LOOP_WORKFLOW.zh.md](docs/CONVERSATION_LOOP_WORKFLOW.zh.md)): The abstract 4-phase Agent Conversation Loop workflow specification (Hermes Agent architecture).
 - `architecture-analysis.zh.md`: The original architecture analysis document comparing Hermes Agent and Claude Code.
 - `spec/`: Language-agnostic specifications for the abstract agent loop, tool definitions, and design mapping.
