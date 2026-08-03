@@ -4,14 +4,38 @@
 
 ## Overview
 
-The C# implementation models the 4-phase Agent Conversation Loop workflow using .NET 8, `Azure.AI.OpenAI` SDK, and strongly typed `TurnResult` objects.
+The C# implementation models the 4-phase Agent Conversation Loop workflow using .NET 8, `Azure.AI.OpenAI` SDK, and strongly typed `TurnResult` objects under the root namespace **`Skight.AgentPlatform`**.
 
-## File Structure
+## Project Architecture & File Structure
 
-- `Agent.cs`: `Agent` class and `TurnResult` class implementing the 4-phase loop.
-- `ToolRegistry.cs`: Thread-safe tool registry supporting async tool execution.
-- `Tools.cs`: Registered mock tools.
-- `Program.cs`: CLI entry point supporting Azure OpenAI and standard OpenAI endpoints.
+```
+implementations/csharp/
+├── Skight.AgentPlatform.sln
+├── src/
+│   └── Skight.AgentPlatform/            (Core Executable App)
+│       ├── Skight.AgentPlatform.csproj
+│       ├── Agent.cs                      (4-phase conversation loop & state machine)
+│       ├── ToolRegistry.cs               (Tool registration & execution runtime)
+│       ├── Tools.cs                      (Mock tool definitions)
+│       └── Program.cs                    (CLI entry point with .env & Entra ID support)
+└── tests/
+    ├── Skight.AgentPlatform.Tests/      (xUnit + FluentAssertions Unit & Spec Tests)
+    ├── Skight.AgentPlatform.MSpec.Tests/  (Machine.Specifications BDD Context-Spec Tests)
+    └── Skight.AgentPlatform.LightBDD.Tests/ (LightBDD Code-First Scenario BDD Tests)
+```
+
+## Running Tests
+
+Run all 3 specification test suites via the solution file:
+
+```powershell
+dotnet test implementations/csharp/Skight.AgentPlatform.sln
+```
+
+Or run individual test frameworks:
+- **xUnit**: `dotnet test implementations/csharp/tests/Skight.AgentPlatform.Tests`
+- **MSpec**: `dotnet test implementations/csharp/tests/Skight.AgentPlatform.MSpec.Tests`
+- **LightBDD**: `dotnet test implementations/csharp/tests/Skight.AgentPlatform.LightBDD.Tests`
 
 ## Workflow Mapping
 

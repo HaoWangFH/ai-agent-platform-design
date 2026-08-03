@@ -1,0 +1,372 @@
+<!DOCTYPE HTML><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,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"/><title>Summary</title><style>html {
+--logo-ico: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjgwMCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhckdyYWRpZW50NTQxNCIgeDE9IjI2My44MSIgeDI9IjY4NC40NSIgeTE9IjUxNy4xNiIgeTI9Ii0xNi4yMDMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjZjkwIiBvZmZzZXQ9IjAiLz48c3RvcCBzdG9wLWNvbG9yPSIjZmZmZjA2IiBvZmZzZXQ9IjEiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibGluZWFyR3JhZGllbnQ1NDE2IiB4MT0iMjM3LjE0IiB4Mj0iNTQ4LjcxIiB5MT0iODM2LjQyIiB5Mj0iMzM3Ljg1IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iI2ZmM2IwMCIgb2Zmc2V0PSIwIi8+PHN0b3Agc3RvcC1jb2xvcj0iI2YwMCIgc3RvcC1vcGFjaXR5PSIwIiBvZmZzZXQ9IjEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIC0yNTIuMzYpIj48ZyBhcmlhLWxhYmVsPSIoICAgKSkiPjxwYXRoIGQ9Im0xMDcuNjcgMTAzOC41cS0xLjk3NzUgMC01LjQ5MzIuMjE5Ny0zLjI5NTkuMjE5Ny00LjgzNC4yMTk3LTQzLjA2NiAwLTYyLjE4My0yNS43MDgtMTMuNDAzLTE4LjIzNy0xMy40MDMtNDYuMTQzdi0xNDQuMTRxMC0yOC4xMjUgMTMuNDAzLTQ2LjE0MyAxOS4xMTYtMjUuNzA4IDYyLjE4My0yNS43MDggMS41MzgxIDAgNC44MzQuMjE5NzMgMy41MTU2LjIxOTcyIDUuNDkzMi4yMTk3MnYzOC42NzJxLTIyLjQxMiAwLTMyLjA4IDcuNDcwNy05LjQ0ODIgNy40NzA3LTkuNDQ4MiAyNS4yNjl2MTQ0LjE0cTAgMTcuNzk4IDkuNDQ4MiAyNS4yNjkgOS42NjggNy40NzA3IDMyLjA4IDcuNDcwN3oiLz48cGF0aCBkPSJtNjIwLjUxIDk2Ny4wN3EwIDI3LjkwNS0xMy40MDMgNDYuMTQzLTE5LjExNiAyNS43MDgtNjIuMTgzIDI1LjcwOC0xLjUzODEgMC01LjA1MzctLjIxOTctMy41MTU2LS4yMTk3LTUuMjczNC0uMjE5N3YtMzguNjcycTIyLjQxMiAwIDMxLjg2LTcuNDcwNyA5LjQ0ODItNy40NzA3IDkuNDQ4Mi0yNS4yNjl2LTE0NC4xNHEwLTE3Ljc5OC05LjQ0ODItMjUuMjY5LTkuNDQ4Mi03LjQ3MDctMzEuODYtNy40NzA3di0zOC42NzJxMS43NTc4IDAgNS4yNzM0LS4yMTk3MiAzLjUxNTYtLjIxOTczIDUuMDUzNy0uMjE5NzMgNDMuMDY2IDAgNjIuMTgzIDI1LjcwOCAxMy40MDMgMTguMDE4IDEzLjQwMyA0Ni4xNDN6Ii8+PHBhdGggZD0ibTc1Ny44NCA5NjcuMDdxMCAyNy45MDUtMTMuNDAzIDQ2LjE0My0xOS4xMTYgMjUuNzA4LTYyLjE4MyAyNS43MDgtMS41MzgxIDAtNS4wNTM3LS4yMTk3LTMuNTE1Ni0uMjE5Ny01LjI3MzQtLjIxOTd2LTM4LjY3MnEyMi40MTIgMCAzMS44Ni03LjQ3MDcgOS40NDgyLTcuNDcwNyA5LjQ0ODItMjUuMjY5di0xNDQuMTRxMC0xNy43OTgtOS40NDgyLTI1LjI2OS05LjQ0ODItNy40NzA3LTMxLjg2LTcuNDcwN3YtMzguNjcycTEuNzU3OCAwIDUuMjczNC0uMjE5NzIgMy41MTU2LS4yMTk3MyA1LjA1MzctLjIxOTczIDQzLjA2NiAwIDYyLjE4MyAyNS43MDggMTMuNDAzIDE4LjAxOCAxMy40MDMgNDYuMTQzeiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg3NS43MTQgMTEuNDI5KSI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTUzLjUzOCkiIHN0cm9rZT0iIzAwMCI+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAyNTIuMzYpIiBkPSJtMjQ0LjQ2IDY0OC40OGM0MC4xNTItNS4xNDMzIDc4LjQzMy0yMy45MjMgMTA3LjA4LTUyLjUyOCAxMC44OTQtMTAuODggMjAuNDIxLTIzLjEyOCAyOC4yODQtMzYuMzY1bC00NS40NTcgMTAuMTAyYzIyLjc3Mi0xMC42MDYgNDMuOTU1LTI0LjYxNCA2Mi42MjktNDEuNDE2IDE0LjM5Ni0xMi45NTIgMjcuMzAzLTI3LjU1NyAzOC4zODYtNDMuNDM3bC02NC42NSAxNS4xNTJjNTAuNTM4LTIxLjI2NiA5NC42NDYtNTcuNTQ4IDEyNS4yNi0xMDMuMDQgNS40ODM2LTguMTQ3OSAxMC41NDMtMTYuNTgxIDE1LjE1Mi0yNS4yNTRsLTU0LjU0OCA4LjA4MTJjNTkuNjEzLTI0LjUwNCAxMTAuMTktNzAuMzUxIDE0MC40MS0xMjcuMjggNy43MjItMTQuNTQ2IDE0LjE1My0yOS43NzggMTkuMTkzLTQ1LjQ1N2wtODMuODQzIDEwLjEwMmMzMS40MzUtMjQuNzYyIDU4LjU2Mi01NC45NzkgNzkuODAyLTg4Ljg5MyAyMy4zMzgtMzcuMjY1IDM5LjU0Mi03OC45ODEgNDcuNDc3LTEyMi4yMy0xNS4yNDkgMS4xNzY4LTMwLjQzMiAzLjIwMTMtNDUuNDU3IDYuMDYwOS02Ni42NzcgMTIuNjkxLTEzMC4xIDQyLjEyNS0xODIuODQgODQuODUzbDI1LjI1NC00Ni40NjdjLTExLjU4NSA0LjczNjMtMjIuNzUzIDEwLjQ5LTMzLjMzNSAxNy4xNzMtNDkuMjg4IDMxLjEyNy04NC44NjYgODMuMTgzLTk1Ljk2NCAxNDAuNDFsLTEwLjEwMi00MS40MTZjLTEyLjA5OSAxMC4wOTgtMjIuOTc4IDIxLjY1Ny0zMi4zMjUgMzQuMzQ1LTMwLjIwNCA0MC45OTktNDMuNTU2IDk0LjAzOS0zNi4zNjUgMTQ0LjQ1bC0xMi4xMjItNTAuNTA4Yy0yNS43NjEgNDAuMTExLTQxLjIwMyA4Ni43OS00NC40NDcgMTM0LjM1LTEuODQ0MSAyNy4wNDIuMjAzNzcgNTQuMzQ3IDYuMDYwOSA4MC44MTJsLTIxLjIxMy01My41MzhjLTguNjY1NiAyMi43NzgtMTIuNDc5IDQ3LjM4OS0xMS4xMTIgNzEuNzIxIDIuNjc2IDQ3LjYzNiAyNS45MjggOTMuNzY0IDYyLjYyOSAxMjQuMjVsMTYuMTYyLTQuMDQwNnoiIGZpbGw9InVybCgjbGluZWFyR3JhZGllbnQ1NDE0KSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjUuMiIvPjxwYXRoIGQ9Im0yNDUuMSA4NjcuNWMxNi44MzkgMS4zMTA1IDM0LjEtMy44MzExIDQ3LjQ3Ny0xNC4xNDIgOS4yMjAzLTcuMTA2OSAxNi41OTUtMTYuNTg4IDIxLjIxMy0yNy4yNzRsLTM0LjM0NSA2LjA2MDljMTUuNDctMTEuOTgxIDMwLjAwNy0yNS4xNjYgNDMuNDM3LTM5LjM5NiA3LjA0NjItNy40NjU4IDEzLjc4OC0xNS4yMTkgMjAuMjAzLTIzLjIzNGwtNDUuNDU3IDIuMDIwM2MzMi44OTItMTcuNjI5IDYyLjI1NS00MS44MSA4NS44NjMtNzAuNzExIDkuMzQ1OS0xMS40NDEgMTcuNzk4LTIzLjYxMiAyNS4yNTQtMzYuMzY1bC01MC41MDggMWUtNWMzMC45MDItMjIuMTAxIDU5LjQwNi00Ny41NTEgODQuODUzLTc1Ljc2MSAxNy43LTE5LjYyMyAzMy45MjQtNDAuNTc4IDQ4LjQ4Ny02Mi42MjlsLTQzLjQzNy02LjA2MDljMzguMDk4LTI0LjUwOSA2NC42NDQtNjYuMjI0IDcwLjcxMS0xMTEuMTIgMS40NDYyLTEwLjcwMiAxLjc4NTMtMjEuNTUzIDEuMDEwMi0zMi4zMjUtOC41ODUxIDEuNjkzOC0xNy4wMzcgNC4wNjA1LTI1LjI1NCA3LjA3MTEtMzAuOTIzIDExLjMzLTU4LjM1NiAzMS45OTUtNzcuNzgyIDU4LjU4OWwtMTUuMTUyLTI2LjI2NGMtNi43OTUgNS45ODMxLTEzLjIxIDEyLjM5OC0xOS4xOTMgMTkuMTkzLTI5Ljc5OSAzMy44NDMtNDguNDgyIDc3LjMxNy01Mi41MjggMTIyLjIzbC0xNC4xNDItMjcuMjc0Yy00Ljk5MDggNC40MjYtOS43MTYxIDkuMTUxNC0xNC4xNDIgMTQuMTQyLTMyLjAyMiAzNi4xMDgtNDcuMTk4IDg2LjU2OS00MC40MDYgMTM0LjM1bC0yNC4yNDQtMjkuMjk0Yy02LjEwMzEgOS41MjgtMTEuMTkyIDE5LjcwNS0xNS4xNTIgMzAuMzA1LTE0LjQ0OCAzOC42NjYtMTMuMTUxIDgyLjk1OSAzLjUzNTUgMTIwLjcxbC0yOC43ODktMTQuNjQ3Yy4xNTY2MyA1LjI0NS42NjMyIDEwLjQ4IDEuNTE1MiAxNS42NTcgNC4wNDA2IDI0LjU1NSAxNi4wNzYgNDcuNzI4IDMzLjg0IDY1LjE1NWwxMy4xMzIgMS4wMTAyeiIgZmlsbD0idXJsKCNsaW5lYXJHcmFkaWVudDU0MTYpIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIuNiIvPjxwYXRoIGQ9Im0yMTIuNjEgMTAyMy4zYzEuODY2My00OS41NzQgNy41NDQzLTk5LjAwNCAxNi45NjctMTQ3LjcxIDE0LjI3NC03My43OCAzNy4zMzItMTQ2LjI4IDczLjQ0OS0yMTIuMTggMjMuMDI5LTQyLjAxOCA1MS4xNTQtODEuMDExIDc5Ljk5Mi0xMTkuMjggMzAuNTY2LTQwLjU1OCA2Mi4wMjQtODAuNDQzIDk0LjM0NS0xMTkuNjItOS42NjE2IDE0LjA3My0xOS4zMjggMjguMTQyLTI4Ljk5OSA0Mi4yMDgtMjAuOTE2IDMwLjQyLTQxLjg1MyA2MC44MjQtNjIuODE0IDkxLjIxMy0yNS40MTYgMzYuODQ4LTUwLjg4IDczLjgyLTcxLjY3IDExMy40Ni0zMy44MjQgNjQuNDk1LTU0Ljg2NyAxMzUuMTYtNjcuMzE4IDIwNi45Mi01LjIxODMgMzAuMDcyLTguOTYwNCA2MC40MDEtMTEuMjA4IDkwLjg0bDcuMzQ0NiAxOC42MzEtMzAuMDg5IDM1LjUxNHoiIHN0cm9rZS13aWR0aD0iMXB4Ii8+PC9nPjwvZz48ZyBzdHJva2Utd2lkdGg9IjFweCIgYXJpYS1sYWJlbD0iMyI+PHBhdGggZD0ibTc5Mi4xMyA2NjkuMzZxMCAzMC4wNTQtMjQuMjU4IDQ5LjE1OS0yMy4zOTkgMTguNDYyLTU3Ljk2MSAxOC40NjItMzAuNDgzIDAtNTQuNTI2LTEyLjY2NmwxMy4wOTUtNDAuNzg3cTI5LjE5NSA5LjY2MDEgNDMuMTQ5IDkuNjYwMSAxMy41MjQgMCAyMi41NC02LjAxMDcgMTAuMDg5LTYuNDQwMSAxMC4wODktMTcuMzg4IDAtMTIuNDUxLTExLjM3Ny0xOS43NS05Ljg3NDgtNi42NTQ4LTI0LjI1OC02LjY1NDgtOC4zNzIxIDAtMTIuNDUxLjg1ODY4di0zMS41NTZxMzkuMjg1IDAgMzkuMjg1LTIzLjgyOCAwLTkuNDQ1NS05Ljg3NDgtMTUuMjQyLTguNTg2OC01LjE1MjEtMjAuNjA4LTUuMzY2Ny0xNy44MTgtLjIxNDY3LTM0LjEzMiA5LjY2MDF2LTQzLjE0OXEyMC4xNzktOC4zNzIxIDQzLjc5My04LjM3MjEgMjYuNjE5IDAgNDUuMjk1IDEyLjQ1MSAyMi45NyAxNC44MTIgMjIuOTcgNDIuNTA1IDAgMjcuNDc4LTIyLjExMSAzOC44NTUgMTQuMTY4IDYuMjI1NCAyMi43NTUgMTkuNzV0OC41ODY4IDI5LjQxeiIvPjwvZz48L2c+PC9zdmc+Cg==');
+}</style><style>@import url('https://fonts.googleapis.com/css2?family=Lato&family=Roboto+Mono&display=swap');
+*{color: #222222;-webkit-print-color-adjust:exact;}
+html{font-size: 12pt;font-family: 'Lato', sans-serif;}
+.title *{ line-height: 1em;}
+label * { line-height: 1em;}
+h1{ font-size: 1.40em;}
+h2{ font-size: 1.20em;}
+h3{ font-size: 1.00em;}
+section.features{display: flex;flex-direction: column;}
+.feature{margin-bottom: 0.5rem;padding: 0.5rem;display: table;border-radius: 0.5em;}
+.title{font-weight: bold;margin: 0;}
+.title,.description,.step{ word-wrap: break-word;}
+.steps,.categories{margin-top: 0.5rem;}
+.feature .scenarios {margin-top: 0.5rem;}
+.feature:nth-child(even) { background: #e0e0e0; }
+.feature:nth-child(odd) { background: #e0e0e0; }
+.scenario{ border-radius: 0.5em;background-color: #ffffff;padding: 0.5rem;margin-bottom: 0.5rem;}
+.scenario:last-of-type{ margin-bottom: 0;}
+.toggleF:not(:checked) ~ .scenarios { display: none;}
+.toggleS:not(:checked) ~ .header ~ .content { display: none;}
+.toggleSS:not(:checked) ~ .sub-steps { display: none;}
+.description{font-style: italic;color: #222222;white-space: pre-wrap;margin-top: 0.5rem;}
+.scenario .description {margin: 0.25rem 0 0.25rem 0;}
+span.label{background-color: hsl(202, 92%, 90%); color: hsl(202, 92%, 34%); padding: 0 0.3em; border-radius: 0.3em; font-size:smaller;white-space: nowrap;font-weight: normal;}
+span.category{background-color: hsl(24, 100%, 90%); color: hsl(24, 100%, 40%); padding: 0 0.3em; margin-right: 0.25em;white-space: nowrap;font-weight: normal;font-style: italic;}
+.status{width:21px;height:21px;display: flex;vertical-align: middle;text-align: center;font-family: 'Roboto Mono', monospace;font-size: 13px;font-weight: bold;line-height: 13px;align-items: center;justify-content: center;padding: 4px;margin-right: 5px;}
+.status{border:0;box-sizing: border-box;border-radius: 50%;color:#ffffff;}
+.status.passed{background-color:#1daf26;}
+.status.failed{background-color:#cc0000;}
+.status.ignored{background-color:#fbc800;color: black;}
+.status.bypassed{background-color:#2e7bff;}
+.status.notrun{background-color:#949494;}
+.attachments code,.comments code,.status-details code{white-space: pre-wrap;font-size: 0.75rem;font-family: 'Roboto Mono', monospace;line-height: 1em;}
+.status-details > h3 {font-weight: bold;margin-bottom: 0.5rem;border-bottom:0.2em solid hsl(34, 100%, 80%);}
+.comments > h3 {font-weight: bold;margin-bottom: 0.5rem;border-bottom:0.2em solid hsl(204, 100%, 80%);}
+.attachments > h3 {font-weight: bold;margin-bottom: 0.5rem;border-bottom:0.2em solid hsl(276, 100%, 80%);}
+.attachments div{ display: inline-block; margin-right: 0.5rem;}
+.comments div{color: inherit;font-family: inherit;}
+.step,.categories,.step-parameters{margin: 0.2em;}
+.smallLink,.duration{color: #0000cd;font-size: 0.8em;font-family: 'Roboto Mono', monospace;font-weight: normal;}
+th,td{ white-space: nowrap;}
+th{ text-align: right;}
+th.minor{ font-weight: normal;}
+.hidden{ display: none;}
+.sortable{ cursor: default;}
+td{ text-align: left;}
+table,th,td{ font-size: 1em;}
+section.features-summary > div.content{background-color: #e0e0e0;border-radius: 0.5em;padding: 0.5rem;display:inline-block;}
+section.execution-summary{background-color: #e9e9e9;border-radius: 0.5em;padding: 0.5rem;display:inline-block;}
+.execution-summary h1{margin:0;}
+.execution-summary h1:before {content: " ";display: inline-block;background-color: #ffffff;width: 3em;height: 3em;vertical-align: middle;margin-right: 1em;border-radius: 0.5em;background-image: var(--logo-ico);background-repeat: no-repeat;background-size: 80%;background-position: center;}
+section.execution-summary > div.content { display: flex;align-items: flex-start;gap: 3em;margin-top: 0.5rem;}
+section.execution-summary table{ border-spacing: 1.5em 0.5em;margin-left: -1.5em;margin-right: -1.5em;}
+section.execution-summary table th{ font-weight: normal;text-align: left;}
+section.execution-summary table th.subHeader{ text-align: center;font-weight: bold;font-size: larger;}
+section.execution-summary table td.overall-status{ text-align: center;}
+section.execution-summary table td.overall-status.passed{ background-color: hsl(120, 100%, 83%);}
+section.execution-summary table td.overall-status.failed{ background-color: hsl(0, 100%, 83%);}
+table.features {border-collapse:collapse;font-size: smaller;}
+table.features tbody{background-color:#ffffff;}
+table.features tfoot td:first-of-type{font-weight: bold;}
+table.features td,table.features th{padding:0.2em 0.4em;}
+table.features tfoot td{padding-top:0.5rem;}
+table.features td{ text-align: right;}
+table.features td:first-of-type, table.features th:first-of-type{ text-align: left;}
+table.features td:first-of-type{white-space: normal;word-wrap:break-word;}
+table.features td:nth-child(2),table.features td:nth-child(7),table.features td:nth-child(13){border-left: 2px solid #e0e0e0;}
+table.features tr:nth-child(even){background-color:#f5f5f5;}
+.failedAlert{ color: hsl(0, 100%, 67%);font-weight: bold;}
+.ignoredAlert{ color: hsl(30, 100%, 67%);font-weight: bold;}
+.bypassedAlert{ color: hsl(240, 100%, 67%);font-weight: bold;}
+.options{ margin-bottom: 0.2em;}
+.options > span{ display: table-cell;}
+.options > span:first-child{ font-weight: bold;font-style: italic; min-width: 6em;text-align: right;padding-right: 0.5em;}
+.option{ display: inline-block;margin-right: 0.5em;}
+.feature[data-filtered="false"],.scenario[data-filtered="false"] { display: none;}
+a{ text-decoration: none;}
+a:hover{ text-decoration: underline;}
+#optionsLink, .smallLink, a:hover,label:hover,label:hover .text,.sortable:hover, .attachments a{ color: #662266;}
+.smallLink{ display: none;}
+*:hover > .smallLink { display: inline;}
+.chbox{display: inline-block;}
+input[type="checkbox"],input[type="radio"]{ display: none;}
+.chbox:before{display: flex; border: 1px solid #777777;margin:1px;margin-right: 5px;font-weight: bold;text-align: center;width: 18px;height: 18px;font-family: 'Roboto Mono', monospace;font-size:15px;line-height: 15px;justify-content: center;align-items: center;content: "\00a0";}
+.chbox.empty:before {visibility: hidden;}
+input[type="checkbox"]:not(:checked) + * .chbox:before{ background-color: #ffeeee;content: "\2715";}
+input[type="checkbox"]:checked + * .chbox:before{ background-color: #eeeeee;content: "\2713";}
+input[type="checkbox"].toggle + * .chbox:before{ border-radius: 20%;background-color: #eeeeee;}
+input[type="checkbox"].toggle:not(:checked) + * .chbox:before{ content: "+";}
+input[type="checkbox"].toggle:checked + * .chbox:before{ content: "-";}
+input:hover + * .chbox:before{ background-color: #ffffaa !important;}
+input[type="radio"] + * .chbox:before{border-radius: 50%; background-color: #eeeeee;}
+input[type="radio"]:not(:checked) + * .chbox:before{content: "\00a0";}
+input[type="radio"]:checked + * .chbox:before{content: "\2713";}
+label{ display: inline-block;}
+.optionsPanel #optionsLink {display: inline-block; visibility: hidden;margin: 0.1em 0 0.5em 6em;font-weight: bold; font-family: 'Roboto Mono', monospace;}
+.optionsPanel:hover #optionsLink{ visibility: visible;}
+.footer{ font-size: x-small;text-align: center;}
+.footer a{ font-weight: bold;}
+table.param.table{ border-collapse: collapse; margin-top:0.1em;}
+table.param.table th.param,table.param.table td.param{ border: 1px solid #777777;}
+.inline-param{border: 1px solid #777777; padding: 0 0.3em; border-radius: 0.3em; font-size:smaller;}
+.step-parameters > .param { background-color: #f5f5f5; border: 1px solid #777777; padding: 0.3em; display: inline-block; border-radius: 0.3em; margin: 0.2em;}
+.step-parameters > .param > div {font-weight: bold;margin-bottom: 0.5rem;}
+td.param, th.param { text-align: left; padding-left: 0.3em; padding-right: 0.3em;}
+th.param.column{ background-color: #ffffff; text-align: left;font-weight: normal;}
+th.param.column.key { font-weight: bold;}
+td.param.type { font-size:smaller;color: #444444; text-align: center; font-family: 'Roboto Mono', monospace;}
+.inline-param.success, .param.value.success {background: hsl(120, 100%, 83%)}
+.inline-param.failure, .inline-param.exception, .param.value.failure,.param.value.exception {background: hsl(0, 100%, 83%);}
+.inline-param.notprovided, .param.value.notprovided {background: hsl(54, 100%, 83%);}
+.inline-param.notapplicable, .param.value.notapplicable {background: hsl(184, 100%, 90%);}
+.inline-param.unknown { text-align: right;background: hsl(300, 53%, 90%);}
+td.param.node{ text-align: right;background: #ffffff;}
+hr {border-top: 1px dashed #777777;border-bottom: 0px; margin: 2px; padding: 0;}
+span.expected{font-size: 0.8em;}
+span.expected:before{font-size:0.8em; content: "expected: "; color: #444444;}
+th.sortable{padding-right: 1.1em !important;position: relative;}
+th.sortable:before,th.sortable:after{border: 0.5em solid transparent; display: block;position: absolute;width:1em;height:1em;right:0.25em;content:"";box-sizing: border-box; font-size:smaller;}
+th.sortable:before{border-top-color: #777777;bottom:-0.14em;}
+th.sortable:after{border-bottom-color: #777777;top:-0.14em;}
+th.sortable[data-dir="false"]:after{border-bottom-color: #222222;}
+th.sortable[data-dir="true"]:before{border-top-color: #222222;}
+.shareable:before{ content: "[∞";}
+.shareable:after{ content: "]";}
+.shareable{ margin-left: 0.5rem;}
+.tree.node.branch{display:flex;align-items: flex-start;}
+.tree.node.leaf{display:inline-block;}
+.tree.node > .detail{display: flex;margin:0.2em;}
+.tree.node .param{font-weight:normal;}
+.tree.node .param.node{background-color:#ffffff;border:1px solid #777777;border-radius: 0; padding: 0.1em 0.3em;}
+.tree.node .param.value{border:1px solid #777777;border-radius: 0; padding: 0.1em 0.3em;border-left:0;}
+.tree.node.leaf .param.value{border-radius: 0 0.5em 0.5em 0;padding-right:0.5em;}
+.tree.node .detail:hover .param,.tree.node .detail:hover ~ * .param{border-color: #662266;outline: 1px solid #662266;}
+.feature > .header,.scenario > .header, .step > .header{display:flex;align-items: flex-start;}
+.header > .controls{display:flex;align-items: center;}
+.scenario > .header > span {align-self: center;}
+.scenario > .content { margin-left: 50px;}
+.step > .step-parameters, .step > .sub-steps { margin-left: 50px; }
+.step{ margin-left: -25px;}</style><script>var initialized = false;
+var synchronizationCounter = -1000;
+
+function Queryable(array) {
+    this._source = array;
+    this._where = function (value) { return true; };
+    this.where = function (predicate) { this._where = predicate; return this; };
+    this.do = function (action) {
+        var srcLength = this._source.length;
+        for (var i = 0; i < srcLength; ++i) {
+            if (this._where(this._source[i]))
+                action(this._source[i]);
+        }
+    };
+    this.any = function () {
+        var srcLength = this._source.length;
+        for (var i = 0; i < srcLength; ++i) {
+            if (this._where(this._source[i]))
+                return true;
+        }
+        return false;
+    };
+    this.toArray = function (select) {
+        var result = [];
+        this.do(function (o) { result.push(select(o)); });
+        return result;
+    };
+}
+
+Object.prototype.asQueryable = function () {
+    return new Queryable(this);
+};
+
+function checkAll(checkBoxClass, checked) {
+    document.getElementsByTagName('input')
+        .asQueryable()
+        .where(function (b) { return b.classList.contains(checkBoxClass); })
+        .do(function (b) { b.checked = checked; });
+    updateOptionsLink();
+    ++synchronizationCounter;
+}
+
+function sortTable(tableId, columnIdx, numeric, toggle) {
+    var direction = toggle.dataset.dir === 'true';
+
+    var sortMethod;
+    var parseMethod;
+    var checkMethod;
+    if (numeric) {
+        sortMethod = direction ? function (x, y) { return x[0] - y[0]; } : function (x, y) { return y[0] - x[0]; };
+        parseMethod = function (x) { return parseFloat(x); };
+        checkMethod = function (x) { return !isNaN(x); };
+    } else {
+        sortMethod = direction
+            ? function (x, y) { return (x[0] > y[0]) ? 1 : ((x[0] < y[0]) ? -1 : 0); }
+            : function (x, y) { return (x[0] < y[0]) ? 1 : ((x[0] > y[0]) ? -1 : 0); };
+        parseMethod = function (x) { return x; };
+        checkMethod = function (x) { return true; };
+    }
+
+    var table = document.getElementById(tableId);
+    table.tHead.rows[0].cells.asQueryable().do(function (column) { delete column.dataset.dir; });
+    toggle.dataset.dir = !direction;
+    var tbody = table.tBodies[0];
+    var store = [];
+    tbody.rows.asQueryable()
+        .do(function (row) {
+            var sortnr = parseMethod(row.cells[columnIdx].textContent || row.cells[columnIdx].innerText);
+            if (checkMethod(sortnr)) store.push([sortnr, row]);
+        });
+    store.sort(sortMethod);
+    store.asQueryable().do(function (row) { tbody.appendChild(row[1]); });
+    ++synchronizationCounter;
+}
+
+function applyFilter() {
+    if (!initialized)
+        return;
+
+    var getFilterValues = function (elementsName) {
+        return document.getElementsByName(elementsName)
+            .asQueryable()
+            .where(function (e) { return e.checked; })
+            .toArray(function (e) { return e.dataset.filterValue; });
+    };
+
+    var applyTo = function (tag, className, filter) {
+        document.getElementsByTagName(tag)
+            .asQueryable()
+            .where(function (e) { return e.classList.contains(className); })
+            .do(filter);
+    };
+
+    var statusFilterValues = getFilterValues('statusFilter');
+    var categoryFilterValues = getFilterValues('categoryFilter');
+
+    var statusFilter = function (element) {
+        return statusFilterValues.asQueryable()
+            .where(function (s) { return element.classList.contains(s); })
+            .any();
+    };
+
+    var childFilter = function (feature) {
+        return feature.getElementsByTagName('div')
+            .asQueryable()
+            .where(function (ch) { return ch.classList.contains('scenario') && ch.dataset.filtered == 'true'; })
+            .any();
+    };
+
+    var categoryFilter = null;
+
+    if (categoryFilterValues.length == 0 || categoryFilterValues[0] === 'all') {
+        categoryFilter = function (scenario) { return true; };
+        childFilter = statusFilter;
+    } else if (categoryFilterValues[0] === 'without') {
+        categoryFilter = function (scenario) { return scenario.dataset.categories == ''; };
+    } else {
+        categoryFilter = function (scenario) {
+            return categoryFilterValues.asQueryable()
+                .where(function (c) { return scenario.dataset.categories.indexOf(c) >= 0; })
+                .any();
+        };
+    }
+
+    applyTo('div', 'scenario', function (scenario) {
+        scenario.dataset.filtered = statusFilter(scenario) && categoryFilter(scenario);
+        scenario.className = scenario.className; //IE fix
+    });
+    applyTo('article', 'feature', function (feature) {
+        feature.dataset.filtered = childFilter(feature);
+        feature.className = feature.className; //IE fix
+    });
+    updateOptionsLink();
+    ++synchronizationCounter;
+}
+
+function updateOptionsLink() {
+    if (!initialized)
+        return;
+
+    var options = [];
+
+    var check = function (element, option, invert = true) {
+        var value = document.getElementById(element).checked;
+        if (invert && !value)
+            options.push(option + '=0');
+        if (!invert && value)
+            options.push(option + '=1');
+    };
+
+    check('toggleFeatures', 'tf');
+    check('toggleScenarios', 'ts');
+    check('toggleSubSteps', 'tss', false);
+
+    check('showPassed', 'fp');
+    check('showBypassed', 'fb');
+    check('showFailed', 'ff');
+    check('showIgnored', 'fi');
+    check('showNotRun', 'fn');
+
+    document.getElementsByName('categoryFilter')
+        .asQueryable()
+        .where(function (c) { return c.checked; })
+        .do(function (c) { options.push('cat=' + c.dataset.filterName); });
+
+    var query = options.join('&');
+    var current = location.search;
+    var idx = current.indexOf('?');
+    var link = (idx >= 0 ? current.substring(0, idx) : current) + '?' + query;
+
+    document.getElementsByTagName('a').asQueryable()
+        .where(function (a) { return a.classList.contains('shareable'); })
+        .do(function (a) {
+            var href = a.href;
+            var i = href.indexOf('#');
+            a.href = link + (i >= 0 ? href.substring(i) : '');
+        });
+}
+
+function applyOptionsFromLink() {
+    var getParam = function (param) {
+        var regex = new RegExp("[\\?&]" + param + "=([^&#]*)");
+        var results = regex.exec(location.search);
+        return results === null ? null : decodeURIComponent(results[1]);
+    };
+
+    var applyToCheckbox = function (elementId, param, invert = true) {
+        var element = document.getElementById(elementId);
+        var value = getParam(param);
+        element.checked = value === null ? !invert : (value==='0'); //set opposite value
+        element.click(); //toggle it
+    };
+
+    applyToCheckbox('toggleFeatures', 'tf');
+    applyToCheckbox('toggleScenarios', 'ts');
+    applyToCheckbox('toggleSubSteps', 'tss', false);
+    applyToCheckbox('showPassed', 'fp');
+    applyToCheckbox('showBypassed', 'fb');
+    applyToCheckbox('showFailed', 'ff');
+    applyToCheckbox('showIgnored', 'fi');
+    applyToCheckbox('showNotRun', 'fn');
+
+    var cat = getParam('cat');
+
+    if (cat !== null) {
+        document.getElementsByName('categoryFilter')
+            .asQueryable()
+            .where(function (c) { return c.dataset.filterName === cat; })
+            .do(function (c) { c.click(); });
+    }
+
+}
+
+function applyLink(linkId, href) {
+    var link = document.getElementById(linkId);
+    if (link != null)
+        link.href = href;
+}
+
+function initialize() {
+    applyLink('bypassedDetails', '?ts=0&fp=0&ff=0&fi=0&fn=0#featureDetails');
+    applyLink('failedDetails', '?ts=0&fp=0&fb=0&fi=0&fn=0#featureDetails');
+    applyLink('ignoredDetails', '?ts=0&fp=0&fb=0&ff=0&fn=0#featureDetails');
+
+    applyOptionsFromLink();
+    initialized = true;
+    applyFilter();
+    synchronizationCounter = 0;
+}</script></head><body><section class="execution-summary"><h1>Test execution summary</h1><div class="content"><table><tr><th class="subHeader" colspan="2">Execution</th></tr><tr><th>Overall status:</th><td class="overall-status passed">Passed</td></tr><tr><th>Start date:</th><td>2026-08-03 (UTC)</td></tr><tr><th>Start time:</th><td>18:07:27</td></tr><tr><th>End time:</th><td>18:07:27</td></tr><tr><th>Duration:</th><td>168ms</td></tr></table><table><tr><th class="subHeader" colspan="2">Content</th></tr><tr><th>Features:</th><td>1</td></tr><tr><th>Scenarios:</th><td><span>1</span></td></tr><tr><th>Passed scenarios:</th><td><span>1</span></td></tr></table></div></section><section class="features-summary"><h1>Feature summary</h1><div class="content"><table id="featuresSummary" class="features"><thead><tr><th class="sortable" onclick="sortTable(&#39;featuresSummary&#39;,0,false,this)">Feature</th><th class="sortable" onclick="sortTable(&#39;featuresSummary&#39;,1,true,this)">Scenarios</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,2,true,this)">Passed</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,3,true,this)">Bypassed</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,4,true,this)">Failed</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,5,true,this)">Ignored</th><th class="sortable" onclick="sortTable(&#39;featuresSummary&#39;,6,true,this)">Steps</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,7,true,this)">Passed</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,8,true,this)">Bypassed</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,9,true,this)">Failed</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,10,true,this)">Ignored</th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,11,true,this)">Not Run</th><th class="sortable" onclick="sortTable(&#39;featuresSummary&#39;,13,true,this)">Duration</th><th class="hidden" onclick=""></th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,15,true,this)">Aggregated</th><th class="hidden" onclick=""></th><th class="sortable minor" onclick="sortTable(&#39;featuresSummary&#39;,17,true,this)">Average</th><th class="hidden" onclick=""></th></tr></thead><tbody><tr><td><a href="#feature1">SequentialToolWorkflowLightBDD</a></td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>7</td><td>7</td><td>0</td><td>0</td><td>0</td><td>0</td><td>168ms</td><td class="hidden">1683678</td><td>168ms</td><td class="hidden">1683678</td><td>168ms</td><td class="hidden">1683678</td></tr></tbody><tfoot><tr><td>Totals</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>7</td><td>7</td><td>0</td><td>0</td><td>0</td><td>0</td><td>168ms</td><td class="hidden">1683678</td><td>168ms</td><td class="hidden">1683678</td><td>168ms</td><td class="hidden">1683678</td></tr></tfoot></table></div></section><section class="features"><h1 id="featureDetails">Feature details <a class="smallLink shareable" href="#featureDetails">link</a></h1><div class="optionsPanel"><div class="options"><span>Toggle:</span><span><span class="option"> <input type="checkbox" checked onclick="checkAll(&#39;toggleF&#39;,toggleFeatures.checked)" id="toggleFeatures"/><label for="toggleFeatures"><span class="chbox"></span>Features</label></span><span class="option"> <input type="checkbox" checked onclick="checkAll(&#39;toggleS&#39;,toggleScenarios.checked)" id="toggleScenarios"/><label for="toggleScenarios"><span class="chbox"></span>Scenarios</label></span><span class="option"> <input type="checkbox" checked onclick="checkAll(&#39;toggleSS&#39;,toggleSubSteps.checked)" id="toggleSubSteps"/><label for="toggleSubSteps"><span class="chbox"></span>Sub Steps</label></span></span></div><div class="options"><span>Filter:</span><span><span class="option"> <input type="checkbox" name="statusFilter" data-filter-value="passed" checked onclick="applyFilter()" id="showPassed"/><label for="showPassed"><span class="chbox"></span>Passed</label></span><span class="option"> <input type="checkbox" name="statusFilter" data-filter-value="bypassed" checked onclick="applyFilter()" id="showBypassed"/><label for="showBypassed"><span class="chbox"></span>Bypassed</label></span><span class="option"> <input type="checkbox" name="statusFilter" data-filter-value="failed" checked onclick="applyFilter()" id="showFailed"/><label for="showFailed"><span class="chbox"></span>Failed</label></span><span class="option"> <input type="checkbox" name="statusFilter" data-filter-value="ignored" checked onclick="applyFilter()" id="showIgnored"/><label for="showIgnored"><span class="chbox"></span>Ignored</label></span><span class="option"> <input type="checkbox" name="statusFilter" data-filter-value="notrun" checked onclick="applyFilter()" id="showNotRun"/><label for="showNotRun"><span class="chbox"></span>Not Run</label></span></span></div> <a class="shareable" href="" id="optionsLink">filtered link</a></div><article class="feature passed"><input type="checkbox" class="toggle toggleF" id="toggle1" checked/><h2 id="feature1" class="title header"><label for="toggle1" class="controls"><span class="chbox"></span></label><span class="content">SequentialToolWorkflowLightBDD <a class="smallLink shareable" href="#feature1">link</a></span></h2><div class="description">In order to execute complex multi-step reasoning tasks
+As an AI Agent
+I want to execute dependent tools in sequence before generating the final answer</div><div class="scenarios"><div class="scenario passed" data-categories=""><input type="checkbox" id="toggle1_0" class="toggle toggleS" checked/><h3 id="scenario1_1" class="header title"><label for="toggle1_0" class="controls"><span class="chbox"></span><span class="status passed">✓</span> </label><span>Multi turn sequential dependent tools execution <span class="duration">(168ms)</span> <a class="smallLink shareable" href="#scenario1_1">link</a></span></h3><div class="description"></div><div class="content"><div class="scenario-steps"><div class="step"><div class="header"><span class="controls"><span class="chbox empty"></span><span class="status passed">✓</span> </span><span>1. <span class="stepType">GIVEN</span> registered tools for weather and contacts <span class="duration">(51ms)</span></span></div></div><div class="step"><div class="header"><span class="controls"><span class="chbox empty"></span><span class="status passed">✓</span> </span><span>2. <span class="stepType">AND</span> mock llm configured for sequential calls <span class="duration">(&lt;1ms)</span></span></div></div><div class="step"><div class="header"><span class="controls"><span class="chbox empty"></span><span class="status passed">✓</span> </span><span>3. <span class="stepType">WHEN</span> agent run is executed with prompt &quot;<span class="inline-param notapplicable">Find weather in Tokyo and notify Alice.</span>&quot; <span class="duration">(19ms)</span></span></div></div><div class="step"><div class="header"><span class="controls"><span class="chbox empty"></span><span class="status passed">✓</span> </span><span>4. <span class="stepType">THEN</span> turn should complete successfully <span class="duration">(18ms)</span></span></div></div><div class="step"><div class="header"><span class="controls"><span class="chbox empty"></span><span class="status passed">✓</span> </span><span>5. <span class="stepType">AND</span> api calls should equal [expected: &quot;<span class="inline-param notapplicable">3</span>&quot;] <span class="duration">(2ms)</span></span></div></div><div class="step"><div class="header"><span class="controls"><span class="chbox empty"></span><span class="status passed">✓</span> </span><span>6. <span class="stepType">AND</span> messages count should equal [expected: &quot;<span class="inline-param notapplicable">7</span>&quot;] <span class="duration">(2ms)</span></span></div></div><div class="step"><div class="header"><span class="controls"><span class="chbox empty"></span><span class="status passed">✓</span> </span><span>7. <span class="stepType">AND</span> final response should match expected text <span class="duration">(4ms)</span></span></div></div></div></div></div></div></article></section><div class="footer">Generated with <a href="https://github.com/LightBDD/LightBDD">LightBDD v3.8.0.0</a></div><script>initialize();</script></body></html>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="Skight.AgentPlatform.FSharp">
+    <resource name="FSharpSignatureData.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpSignatureCompressedData.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpSignatureDataB.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpSignatureCompressedDataB.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpOptimizationData.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpOptimizationCompressedData.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpOptimizationDataB.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpOptimizationCompressedDataB.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpOptimizationInfo.Skight.AgentPlatform.FSharp" action="remove"></resource>
+    <resource name="FSharpSignatureInfo.Skight.AgentPlatform.FSharp" action="remove"></resource>
+  </assembly>
+</linker>
