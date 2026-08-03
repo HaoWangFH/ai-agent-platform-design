@@ -1,3 +1,6 @@
 .env
 implementations/csharp/bin/
 implementations/csharp/obj/
+implementations/fsharp/bin/
+implementations/fsharp/obj/
+node_modules/

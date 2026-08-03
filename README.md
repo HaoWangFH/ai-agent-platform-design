@@ -3,7 +3,7 @@
 This repository contains the architectural analysis, abstract conversation loop specification, and parallel implementations of a lightweight AI Agent platform. The goal is to compare different programming languages and their paradigms when building the core Agent Loop.
 
 ## Structure
-- `CONVERSATION_LOOP_WORKFLOW.md`: The abstract 4-phase Agent Conversation Loop workflow specification (Hermes Agent architecture).
+- `docs/CONVERSATION_LOOP_WORKFLOW.md`: The abstract 4-phase Agent Conversation Loop workflow specification (Hermes Agent architecture).
 - `architecture-analysis.zh.md`: The original architecture analysis document comparing Hermes Agent and Claude Code.
 - `spec/`: Language-agnostic specifications for the abstract agent loop, tool definitions, and design mapping.
 - `implementations/`: The parallel reference implementations of the core agent loop in different languages:

@@ -1,6 +1,6 @@
 # C# Agent Implementation
 
-> **Mapping to Abstract Workflow:** [CONVERSATION_LOOP_WORKFLOW.md](../../CONVERSATION_LOOP_WORKFLOW.md)
+> **Mapping to Abstract Workflow:** [CONVERSATION_LOOP_WORKFLOW.md](../../docs/CONVERSATION_LOOP_WORKFLOW.md)
 
 ## Overview
 
