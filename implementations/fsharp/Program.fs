@@ -26,6 +26,30 @@ module Program =
             )
         | None -> ()
 
+    let getEntraIdTokenAsync (tenantId: string) (clientId: string) (clientSecret: string) (audienceId: string) : Async<string option> =
+        async {
+            try
+                use client = new System.Net.Http.HttpClient()
+                let pairs = [
+                    System.Collections.Generic.KeyValuePair<string, string>("grant_type", "client_credentials")
+                    System.Collections.Generic.KeyValuePair<string, string>("client_id", clientId)
+                    System.Collections.Generic.KeyValuePair<string, string>("client_secret", clientSecret)
+                    System.Collections.Generic.KeyValuePair<string, string>("scope", sprintf "%s/.default" audienceId)
+                ]
+                use content = new System.Net.Http.FormUrlEncodedContent(pairs)
+                let! response = client.PostAsync(sprintf "https://login.microsoftonline.com/%s/oauth2/v2.0/token" tenantId, content) |> Async.AwaitTask
+                if not response.IsSuccessStatusCode then
+                    printfn "Failed to fetch Entra ID token: %O" response.StatusCode
+                    return None
+                else
+                    let! json = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+                    use doc = JsonDocument.Parse(json)
+                    return Some (doc.RootElement.GetProperty("access_token").GetString())
+            with ex ->
+                printfn "Error fetching Entra token: %s" ex.Message
+                return None
+        }
+
     [<EntryPoint>]
     let main argv =
         loadDotEnv ()
@@ -35,6 +59,28 @@ module Program =
             | null | "" -> Environment.GetEnvironmentVariable("OPENAI_API_KEY")
             | k -> k
 
+        let gatewayEndpoint = Environment.GetEnvironmentVariable("GATEWAY_ENDPOINT")
+        let tenantId = Environment.GetEnvironmentVariable("AZURE_TENANT_ID")
+        let clientId = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID")
+        let clientSecret = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET")
+        let audienceId = Environment.GetEnvironmentVariable("GATEWAY_AUDIENCE_ID")
+
+        let mutable endpoint : string option = None
+        let mutable selectedModel = "gpt-4o"
+        let mutable jwtToken : string option = None
+
+        if not (String.IsNullOrEmpty gatewayEndpoint) then
+            let uri = Uri(gatewayEndpoint)
+            endpoint <- Some (sprintf "%s://%s/" uri.Scheme uri.Host)
+            if gatewayEndpoint.Contains("/deployments/") then
+                let parts = gatewayEndpoint.Split("/deployments/")
+                if parts.Length > 1 then
+                    selectedModel <- parts.[1].Split('/').[0]
+
+        if not (String.IsNullOrEmpty tenantId) && not (String.IsNullOrEmpty clientId) && not (String.IsNullOrEmpty clientSecret) && not (String.IsNullOrEmpty audienceId) then
+            printfn "Fetching Entra ID token..."
+            jwtToken <- getEntraIdTokenAsync tenantId clientId clientSecret audienceId |> Async.RunSynchronously
+
         let isMockMode = String.IsNullOrEmpty apiKey
         let effectiveKey = if isMockMode then "dummy_key" else apiKey
 
@@ -43,7 +89,7 @@ module Program =
             printfn "   To make live LLM API calls, set OPENAI_API_KEY in your environment or create a .env file."
             printfn "   Running unit tests via 'dotnet test' uses simulated mock LLMs and does not require an API key.\n"
 
-        printfn "Initializing F# Agent..."
+        printfn "Initializing F# Agent (Model: %s)..." selectedModel
 
         let registry = ToolRegistry()
 
@@ -91,10 +137,10 @@ module Program =
             MaxIterations = 10
             MaxRetries = 3
             ContextWindowLimit = 30
-            Model = "gpt-4o"
+            Model = selectedModel
         }
 
-        let agent = Agent(effectiveKey, registry, config)
+        let agent = Agent(effectiveKey, registry, config, ?endpoint=endpoint, ?jwtToken=jwtToken)
 
         printfn "Agent is ready. Type 'exit' or 'quit' to stop."
 
