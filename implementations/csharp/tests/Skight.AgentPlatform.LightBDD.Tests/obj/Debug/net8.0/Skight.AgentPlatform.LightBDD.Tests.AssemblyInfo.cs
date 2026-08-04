@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Skight.AgentPlatform.LightBDD.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e6ac098846a032aed6e42424384baac897067265")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cb53525b0470e027a03d8eec99ea40c03ad198a3")]
 [assembly: System.Reflection.AssemblyProductAttribute("Skight.AgentPlatform.LightBDD.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Skight.AgentPlatform.LightBDD.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
