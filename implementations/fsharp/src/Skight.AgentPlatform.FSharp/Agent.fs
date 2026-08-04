@@ -30,7 +30,7 @@ module AgentPipeline =
         if state.ApiCalls >= state.Config.MaxIterations then
             printfn "  [Turn Exit] Reached max iterations (%d)." state.Config.MaxIterations
             Exit {
-                Outcome = TurnOutcome.Failed (FailureReason.BudgetExhausted, Some "Budget exhausted")
+                Outcome = TurnOutcome.Failed (FailureReason.BudgetExhausted "Budget exhausted")
                 Messages = state.Messages
                 ApiCalls = state.ApiCalls
             }
@@ -89,7 +89,7 @@ module AgentPipeline =
         }
 
     /// Step 2.6: Process Tool Calls (Self-Correction, JSON Validation & Execution)
-    let processToolCalls (executor: ToolExecutor) (registeredNamesSet: Set<string>) (content: string) (toolCalls: ToolCall list) (state: TurnState) : Async<TurnState> =
+    let processToolCalls (executor: ToolExecutor) (registeredNamesSet: Set<ToolName>) (content: string) (toolCalls: ToolCall list) (state: TurnState) : Async<TurnState> =
         async {
             let! newToolMessages =
                 toolCalls
@@ -98,21 +98,23 @@ module AgentPipeline =
                         let name = toolCall.Name
                         let callId = toolCall.Id
                         let argsStr = toolCall.ArgumentsJson
+                        
+                        let nameStr = ToolName.value name
 
                         if not (registeredNamesSet.Contains(name)) then
-                            let avail = registeredNamesSet |> String.concat ", "
-                            let errStr = sprintf "Error: Tool '%s' is not registered. Available tools: %s" name avail
+                            let avail = registeredNamesSet |> Seq.map ToolName.value |> String.concat ", "
+                            let errStr = sprintf "Error: Tool '%s' is not registered. Available tools: %s" nameStr avail
                             printfn "  [Tool Validation Error] %s" errStr
                             return ToolMessage(callId, errStr)
                         else
                             try
                                 use doc = JsonDocument.Parse(if String.IsNullOrEmpty argsStr then "{}" else argsStr)
-                                printfn "  [Tool Execution] %s(%s)" name argsStr
+                                printfn "  [Tool Execution] %s(%s)" nameStr argsStr
                                 let! execResult = executor name argsStr
                                 printfn "  [Tool Result] %s" execResult
                                 return ToolMessage(callId, execResult)
                             with jsonEx ->
-                                let errStr = sprintf "Error: Invalid JSON arguments for tool '%s': %s" name jsonEx.Message
+                                let errStr = sprintf "Error: Invalid JSON arguments for tool '%s': %s" nameStr jsonEx.Message
                                 printfn "  [JSON Parse Error] %s" errStr
                                 return ToolMessage(callId, errStr)
                     })
@@ -151,7 +153,7 @@ module AgentPipeline =
             }
 
     /// Pure, Tail-Recursive 4-Phase Turn Loop Function
-    let rec runTurnLoop (llmCaller: LlmCaller) (executor: ToolExecutor) (registeredSchemas: ToolSchema list) (registeredNamesSet: Set<string>) (state: TurnState) : Async<TurnResult> =
+    let rec runTurnLoop (llmCaller: LlmCaller) (executor: ToolExecutor) (registeredSchemas: ToolSchema list) (registeredNamesSet: Set<ToolName>) (state: TurnState) : Async<TurnResult> =
         async {
             // Pipeline Step 2.1: Pre-API Checks (Interrupt Guard -> Budget Guard)
             match checkInterrupt state with
@@ -172,13 +174,13 @@ module AgentPipeline =
             | Error NoChoicesReturned ->
                 let message = llmErrorMessage NoChoicesReturned
                 return {
-                    Outcome = TurnOutcome.Failed (FailureReason.NoResponse "No choices returned", Some message)
+                    Outcome = TurnOutcome.Failed (FailureReason.NoResponse message)
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
                 }
             | Error (ApiCallFailed err) ->
                 return {
-                    Outcome = TurnOutcome.Failed (FailureReason.ApiError err, Some err)
+                    Outcome = TurnOutcome.Failed (FailureReason.ApiError err)
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
                 }
@@ -218,9 +220,14 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
         | AssistantMessage (content, toolCalls) ->
             let assistant = ChatRequestAssistantMessage(content)
             for toolCall in toolCalls do
-                assistant.ToolCalls.Add(ChatCompletionsFunctionToolCall(toolCall.Id, toolCall.Name, toolCall.ArgumentsJson))
+                assistant.ToolCalls.Add(ChatCompletionsFunctionToolCall(ToolCallId.value toolCall.Id, ToolName.value toolCall.Name, toolCall.ArgumentsJson))
             assistant :> ChatRequestMessage
-        | ToolMessage (toolCallId, content) -> ChatRequestToolMessage(content, toolCallId) :> ChatRequestMessage
+        | ToolMessage (toolCallId, content) -> ChatRequestToolMessage(content, ToolCallId.value toolCallId) :> ChatRequestMessage
+
+    let (|FunctionToolCall|_|) (tc: ChatCompletionsToolCall) =
+        match tc with
+        | :? ChatCompletionsFunctionToolCall as fnCall -> Some fnCall
+        | _ -> None
 
     let toDomainResponse (responseMessage: ChatResponseMessage) : LlmTurnResponse =
         let content = if isNull responseMessage.Content then "" else responseMessage.Content
@@ -229,14 +236,16 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
                 []
             else
                 responseMessage.ToolCalls
-                |> Seq.choose (fun tc ->
-                    match tc with
-                    | :? ChatCompletionsFunctionToolCall as fnCall ->
-                        Some {
-                            Id = fnCall.Id
-                            Name = fnCall.Name
-                            ArgumentsJson = fnCall.Arguments
-                        }
+                |> Seq.choose (function
+                    | FunctionToolCall fnCall ->
+                        match ToolCallId.create fnCall.Id, ToolName.create fnCall.Name with
+                        | Ok id, Ok name -> 
+                            Some {
+                                Id = id
+                                Name = name
+                                ArgumentsJson = fnCall.Arguments
+                            }
+                        | _ -> None
                     | _ -> None)
                 |> Seq.toList
 
@@ -247,7 +256,7 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
 
     let toFunctionDefinition (schema: ToolSchema) : FunctionDefinition =
         FunctionDefinition(
-            Name = schema.Name,
+            Name = ToolName.value schema.Name,
             Description = schema.Description,
             Parameters = BinaryData.FromString(schema.ParametersJson)
         )

@@ -12,6 +12,11 @@ module SequentialToolWorkflowSpec =
             testAsync "SPEC: Multi-turn sequential tool call workflow (LLM -> Tool 1 -> LLM -> Tool 2 -> LLM -> Text)" {
                 let callCounter = ref 0
 
+                let weatherId = match ToolCallId.create "call_weather_123" with Ok x -> x | _ -> failwith ""
+                let weatherName = match ToolName.create "get_weather" with Ok x -> x | _ -> failwith ""
+                let contactId = match ToolCallId.create "call_contact_456" with Ok x -> x | _ -> failwith ""
+                let contactName = match ToolName.create "search_contacts" with Ok x -> x | _ -> failwith ""
+
                 let mockLlmCaller : LlmCaller =
                     fun _ _ -> async {
                         incr callCounter
@@ -20,13 +25,13 @@ module SequentialToolWorkflowSpec =
                             return
                                 Ok {
                                     Content = ""
-                                    ToolCalls = [ { Id = "call_weather_123"; Name = "get_weather"; ArgumentsJson = "{\"location\":\"Tokyo\"}" } ]
+                                    ToolCalls = [ { Id = weatherId; Name = weatherName; ArgumentsJson = "{\"location\":\"Tokyo\"}" } ]
                                 }
                         | 2 ->
                             return
                                 Ok {
                                     Content = ""
-                                    ToolCalls = [ { Id = "call_contact_456"; Name = "search_contacts"; ArgumentsJson = "{\"name\":\"Alice\"}" } ]
+                                    ToolCalls = [ { Id = contactId; Name = contactName; ArgumentsJson = "{\"name\":\"Alice\"}" } ]
                                 }
                         | 3 ->
                             return
@@ -39,13 +44,16 @@ module SequentialToolWorkflowSpec =
 
                 let mockExecutor : ToolExecutor =
                     fun name _ -> async {
-                        match name with
+                        match ToolName.value name with
                         | "get_weather" -> return "25°C, Sunny"
                         | "search_contacts" -> return "alice@example.com"
-                        | _ -> return sprintf "Unknown tool %s" name
+                        | _ -> return sprintf "Unknown tool %s" (ToolName.value name)
                     }
 
-                let registeredNamesSet = Set.ofList [ "get_weather"; "search_contacts" ]
+                let registeredNamesSet =
+                    [ "get_weather"; "search_contacts" ]
+                    |> List.choose (fun n -> match ToolName.create n with Ok x -> Some x | _ -> None)
+                    |> Set.ofList
 
                 let initialState : TurnState = {
                     Messages = [
@@ -71,12 +79,12 @@ module SequentialToolWorkflowSpec =
                 match result.Messages.[2], result.Messages.[3], result.Messages.[4], result.Messages.[5], result.Messages.[6] with
                 | AssistantMessage (_, firstCalls), ToolMessage (firstCallId, firstResult), AssistantMessage (_, secondCalls), ToolMessage (secondCallId, secondResult), AssistantMessage (finalText, []) ->
                     let actual = {|
-                        FirstToolName = firstCalls |> List.tryHead |> Option.map (fun c -> c.Name)
+                        FirstToolName = firstCalls |> List.tryHead |> Option.map (fun c -> ToolName.value c.Name)
                         FirstToolResult = firstResult
-                        FirstToolCallId = firstCallId
-                        SecondToolName = secondCalls |> List.tryHead |> Option.map (fun c -> c.Name)
+                        FirstToolCallId = ToolCallId.value firstCallId
+                        SecondToolName = secondCalls |> List.tryHead |> Option.map (fun c -> ToolName.value c.Name)
                         SecondToolResult = secondResult
-                        SecondToolCallId = secondCallId
+                        SecondToolCallId = ToolCallId.value secondCallId
                         FinalAssistantText = finalText
                     |}
 

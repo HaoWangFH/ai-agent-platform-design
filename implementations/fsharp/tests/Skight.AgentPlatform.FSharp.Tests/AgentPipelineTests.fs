@@ -40,9 +40,9 @@ module AgentPipelineTests =
                 let exhaustedState = { initialState with ApiCalls = 5 }
 
                 match AgentPipeline.checkBudget exhaustedState with
-                | Exit { Outcome = TurnOutcome.Failed (reason, error) } ->
-                    let actual = {| Reason = reason; Error = error |}
-                    let expected = {| Reason = FailureReason.BudgetExhausted; Error = Some "Budget exhausted" |}
+                | Exit { Outcome = TurnOutcome.Failed reason } ->
+                    let actual = {| Reason = reason |}
+                    let expected = {| Reason = FailureReason.BudgetExhausted "Budget exhausted" |}
                     Expect.equal actual expected "Expected budget failure outcome"
                 | Exit result ->
                     failtestf "Expected failed exit, got %A" result.Outcome
@@ -96,9 +96,9 @@ module AgentPipelineTests =
                 let! result = AgentPipeline.runTurnLoop dummyLlmCaller dummyExecutor [] Set.empty initialState
 
                 match result.Outcome with
-                | TurnOutcome.Failed (reason, error) ->
-                    let actual = {| Reason = reason; Error = error |}
-                    let expected = {| Reason = FailureReason.ApiError "API Connection Failed"; Error = Some "API Connection Failed" |}
+                | TurnOutcome.Failed reason ->
+                    let actual = {| Reason = reason |}
+                    let expected = {| Reason = FailureReason.ApiError "API Connection Failed" |}
                     Expect.equal actual expected "Expected API error outcome"
                 | outcome ->
                     failtestf "Expected failed outcome, got %A" outcome

@@ -158,12 +158,13 @@ module Program =
                     try
                         let result = agent.RunAsync(trimmed) |> Async.RunSynchronously
                         match result.Outcome with
-                        | TurnOutcome.Failed (_, Some err) when isMockMode ->
+                        | TurnOutcome.Failed reason when isMockMode ->
+                            let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
                             printfn "❌ API Call Failed: %s" err
                             printfn "💡 Hint: Please set OPENAI_API_KEY environment variable or create a .env file with OPENAI_API_KEY=your_key to connect to live OpenAI/Azure endpoints."
-                        | TurnOutcome.Failed (_, Some err) ->
+                        | TurnOutcome.Failed reason ->
+                            let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
                             printfn "❌ API Call Failed: %s" err
-                        | TurnOutcome.Failed _
                         | TurnOutcome.Completed _
                         | TurnOutcome.Interrupted -> ()
                     with ex ->

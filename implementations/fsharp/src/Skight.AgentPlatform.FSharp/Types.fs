@@ -1,18 +1,32 @@
 namespace Skight.AgentPlatform.FSharp
 
+type ToolCallId = private ToolCallId of string
+module ToolCallId =
+    let create (id: string) =
+        if System.String.IsNullOrWhiteSpace(id) then Error "ToolCallId cannot be empty"
+        else Ok (ToolCallId id)
+    let value (ToolCallId id) = id
+
+type ToolName = private ToolName of string
+module ToolName =
+    let create (name: string) =
+        if System.String.IsNullOrWhiteSpace(name) then Error "ToolName cannot be empty"
+        else Ok (ToolName name)
+    let value (ToolName name) = name
+
 type FailureReason =
-    | BudgetExhausted
+    | BudgetExhausted of string
     | ApiError of string
     | NoResponse of string
 
 type TurnOutcome =
     | Completed of FinalResponse: string
     | Interrupted
-    | Failed of Reason: FailureReason * ErrorMessage: string option
+    | Failed of Reason: FailureReason
 
 type ToolCall = {
-    Id: string
-    Name: string
+    Id: ToolCallId
+    Name: ToolName
     ArgumentsJson: string
 }
 
@@ -20,7 +34,7 @@ type AgentMessage =
     | SystemMessage of Content: string
     | UserMessage of Content: string
     | AssistantMessage of Content: string * ToolCalls: ToolCall list
-    | ToolMessage of ToolCallId: string * Content: string
+    | ToolMessage of ToolCallId: ToolCallId * Content: string
 
 type LlmTurnResponse = {
     Content: string
@@ -54,14 +68,14 @@ type AgentSessionState = {
 }
 
 type ToolDefinition = {
-    Name: string
+    Name: ToolName
     Description: string
     ParametersJson: string
     Handler: string -> Async<string>
 }
 
 type ToolSchema = {
-    Name: string
+    Name: ToolName
     Description: string
     ParametersJson: string
 }
@@ -82,4 +96,4 @@ type StepResult<'State, 'Result> =
 
 /// Composable function type signatures for dependency injection and partial application
 type LlmCaller = ToolSchema list -> AgentMessage list -> Async<Result<LlmTurnResponse, LlmError>>
-type ToolExecutor = string -> string -> Async<string>
+type ToolExecutor = ToolName -> string -> Async<string>
