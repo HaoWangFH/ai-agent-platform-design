@@ -54,7 +54,7 @@ module SequentialToolWorkflowSpec =
                     ]
                     ApiCalls = 0
                     EmptyContentRetries = 0
-                    InterruptRequested = false
+                    Command = RunTurn
                     Config = { MaxIterations = 5; MaxRetries = 2; ContextWindowLimit = 10; Model = "test-model" }
                 }
 

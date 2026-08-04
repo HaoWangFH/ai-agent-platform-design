@@ -9,7 +9,7 @@ module AgentPipelineTests =
         Messages = messages
         ApiCalls = 0
         EmptyContentRetries = 0
-        InterruptRequested = false
+        Command = RunTurn
         Config = {
             MaxIterations = 5
             MaxRetries = 2
@@ -24,7 +24,7 @@ module AgentPipelineTests =
 
             test "Step 2.1a Interrupt Check returns Exit when interrupt requested" {
                 let initialState = createTestState [ SystemMessage "sys" ]
-                let interruptedState = { initialState with InterruptRequested = true }
+                let interruptedState = { initialState with Command = InterruptTurn }
 
                 match AgentPipeline.checkInterrupt interruptedState with
                 | Exit { Outcome = TurnOutcome.Interrupted reason; ApiCalls = apiCalls } ->

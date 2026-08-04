@@ -14,14 +14,15 @@ module AgentPipeline =
 
     /// Step 2.1a: Pre-API Check - Interrupt Guard
     let checkInterrupt (state: TurnState) : StepResult<TurnState, TurnResult> =
-        if state.InterruptRequested then
+        match state.Command with
+        | InterruptTurn ->
             printfn "  [Turn Exit] Turn interrupted by user."
             Exit {
                 Outcome = TurnOutcome.Interrupted ExitReason.Interrupted
                 Messages = state.Messages
                 ApiCalls = state.ApiCalls
             }
-        else
+        | RunTurn ->
             Continue state
 
     /// Step 2.1b: Pre-API Check - Budget Guard
@@ -271,13 +272,13 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
             Messages = updatedMessages
             ApiCalls = 0
             EmptyContentRetries = 0
-            InterruptRequested = session.InterruptRequested
+            Command = session.PendingCommand
             Config = config
         }
 
         let nextSession = {
             Messages = updatedMessages
-            InterruptRequested = false
+            PendingCommand = RunTurn
         }
 
         turnState, nextSession
@@ -286,11 +287,11 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
         { session with Messages = result.Messages }
 
     let requestInterrupt (session: AgentSessionState) : AgentSessionState =
-        { session with InterruptRequested = true }
+        { session with PendingCommand = InterruptTurn }
 
     let mutable sessionState : AgentSessionState = {
         Messages = []
-        InterruptRequested = false
+        PendingCommand = RunTurn
     }
 
     do

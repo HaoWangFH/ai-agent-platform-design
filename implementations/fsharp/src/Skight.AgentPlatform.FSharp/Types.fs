@@ -42,9 +42,13 @@ type AgentConfig = {
     Model: string
 }
 
+type TurnCommand =
+    | RunTurn
+    | InterruptTurn
+
 type AgentSessionState = {
     Messages: AgentMessage list
-    InterruptRequested: bool
+    PendingCommand: TurnCommand
 }
 
 type ToolDefinition = {
@@ -65,7 +69,7 @@ type TurnState = {
     Messages: AgentMessage list
     ApiCalls: int
     EmptyContentRetries: int
-    InterruptRequested: bool
+    Command: TurnCommand
     Config: AgentConfig
 }
 
