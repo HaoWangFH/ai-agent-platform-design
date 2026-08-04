@@ -10,15 +10,15 @@ type ExitReason =
     | ApiError of string
     | NoResponse of string
 
+type TurnOutcome =
+    | Completed of FinalResponse: string
+    | Interrupted of Reason: ExitReason
+    | Failed of Reason: ExitReason * ErrorMessage: string option
+
 type TurnResult = {
-    FinalResponse: string
+    Outcome: TurnOutcome
     Messages: ChatRequestMessage list
     ApiCalls: int
-    Completed: bool
-    Failed: bool
-    Interrupted: bool
-    ExitReason: ExitReason
-    Error: string option
 }
 
 type AgentConfig = {

@@ -157,14 +157,15 @@ module Program =
                 elif not (String.IsNullOrEmpty trimmed) then
                     try
                         let result = agent.RunAsync(trimmed) |> Async.RunSynchronously
-                        if result.Failed then
-                            match result.Error with
-                            | Some err when isMockMode ->
-                                printfn "❌ API Call Failed: %s" err
-                                printfn "💡 Hint: Please set OPENAI_API_KEY environment variable or create a .env file with OPENAI_API_KEY=your_key to connect to live OpenAI/Azure endpoints."
-                            | Some err ->
-                                printfn "❌ API Call Failed: %s" err
-                            | None -> ()
+                        match result.Outcome with
+                        | TurnOutcome.Failed (_, Some err) when isMockMode ->
+                            printfn "❌ API Call Failed: %s" err
+                            printfn "💡 Hint: Please set OPENAI_API_KEY environment variable or create a .env file with OPENAI_API_KEY=your_key to connect to live OpenAI/Azure endpoints."
+                        | TurnOutcome.Failed (_, Some err) ->
+                            printfn "❌ API Call Failed: %s" err
+                        | TurnOutcome.Failed _
+                        | TurnOutcome.Completed _
+                        | TurnOutcome.Interrupted _ -> ()
                     with ex ->
                         printfn "Error: %s" ex.Message
 

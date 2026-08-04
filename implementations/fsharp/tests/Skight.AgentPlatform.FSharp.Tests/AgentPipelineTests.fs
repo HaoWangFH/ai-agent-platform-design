@@ -1,6 +1,5 @@
 namespace Skight.AgentPlatform.FSharp.Tests
 
-open System
 open Azure.AI.OpenAI
 open Expecto
 open Skight.AgentPlatform.FSharp
@@ -27,76 +26,84 @@ module AgentPipelineTests =
             test "Step 2.1a Interrupt Check returns Exit when interrupt requested" {
                 let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage ]
                 let interruptedState = { initialState with InterruptRequested = true }
-                
+
                 match AgentPipeline.checkInterrupt interruptedState with
-                | Exit res ->
-                    Expect.isTrue res.Interrupted "Expected turn to be interrupted"
-                    Expect.equal res.ExitReason Interrupted "Expected Interrupted exit reason"
+                | Exit { Outcome = TurnOutcome.Interrupted reason; ApiCalls = apiCalls } ->
+                    let actual = {| Reason = reason; ApiCalls = apiCalls |}
+                    let expected = {| Reason = ExitReason.Interrupted; ApiCalls = 0 |}
+                    Expect.equal actual expected "Expected Interrupted outcome"
+                | Exit result ->
+                    failtestf "Expected interrupted exit, got %A" result.Outcome
                 | Continue _ ->
-                    failwith "Expected step to exit on interrupt"
+                    failtest "Expected step to exit on interrupt"
             }
 
             test "Step 2.1b Budget Check returns Exit when max iterations reached" {
                 let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage ]
                 let exhaustedState = { initialState with ApiCalls = 5 }
-                
+
                 match AgentPipeline.checkBudget exhaustedState with
-                | Exit res ->
-                    Expect.isTrue res.Failed "Expected turn to be marked failed"
-                    Expect.equal res.ExitReason BudgetExhausted "Expected BudgetExhausted exit reason"
+                | Exit { Outcome = TurnOutcome.Failed (reason, error) } ->
+                    let actual = {| Reason = reason; Error = error |}
+                    let expected = {| Reason = ExitReason.BudgetExhausted; Error = Some "Budget exhausted" |}
+                    Expect.equal actual expected "Expected budget failure outcome"
+                | Exit result ->
+                    failtestf "Expected failed exit, got %A" result.Outcome
                 | Continue _ ->
-                    failwith "Expected step to exit on budget exhaustion"
+                    failtest "Expected step to exit on budget exhaustion"
             }
 
             test "Step 2.3 Context Window Protection trims middle history when exceeding limit" {
                 let systemMsg = ChatRequestSystemMessage("system prompt") :> ChatRequestMessage
                 let history = systemMsg :: ([ 1 .. 15 ] |> List.map (fun i -> ChatRequestUserMessage(sprintf "msg %d" i) :> ChatRequestMessage))
-                
+
                 let compressed = AgentPipeline.compressContextIfNeeded 10 history
-                
-                Expect.isTrue (compressed.Length <= 10) "Compressed history should be within limit"
-                Expect.equal compressed.Head systemMsg "System prompt should be preserved as head"
+                let actual = {| IsWithinLimit = compressed.Length <= 10; Head = compressed.Head |}
+                let expected = {| IsWithinLimit = true; Head = systemMsg |}
+                Expect.equal actual expected "Compressed history should keep system prompt and stay within limit"
             }
 
             test "Step 2.7 Process Text Response finalizes turn with clean text" {
                 let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage; ChatRequestUserMessage("Hi") :> ChatRequestMessage ]
-                
+
                 match AgentPipeline.processTextResponse "Hello world!" initialState with
-                | Exit res ->
-                    Expect.isTrue res.Completed "Expected turn to complete"
-                    Expect.equal res.FinalResponse "Hello world!" "Expected matching final text"
-                    Expect.equal res.ExitReason (TextResponse "Hello world!") "Expected TextResponse exit reason"
+                | Exit { Outcome = TurnOutcome.Completed finalText } ->
+                    Expect.equal finalText "Hello world!" "Expected matching final text"
+                | Exit result ->
+                    failtestf "Expected completed exit, got %A" result.Outcome
                 | Continue _ ->
-                    failwith "Expected text response to finalize turn"
+                    failtest "Expected text response to finalize turn"
             }
 
             test "Step 2.7 Empty Response Recovery nudges prompt on empty content" {
                 let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage; ChatRequestUserMessage("Hi") :> ChatRequestMessage ]
-                
+
                 match AgentPipeline.processTextResponse "" initialState with
                 | Continue nextState ->
-                    Expect.equal nextState.EmptyContentRetries 1 "Expected EmptyContentRetries count to increment"
-                    Expect.equal nextState.Messages.Length 3 "Expected 3 messages in state after prompt nudge"
-                | Exit _ ->
-                    failwith "Expected empty content to trigger retry prompt nudge"
+                    let actual = {| EmptyContentRetries = nextState.EmptyContentRetries; MessageCount = nextState.Messages.Length |}
+                    let expected = {| EmptyContentRetries = 1; MessageCount = 3 |}
+                    Expect.equal actual expected "Expected prompt nudge retry state"
+                | Exit result ->
+                    failtestf "Expected Continue for empty content, got %A" result.Outcome
             }
 
             testAsync "Functional Loop handles LlmCaller error gracefully" {
-                async {
-                    let dummyLlmCaller : LlmCaller =
-                        fun _ _ -> async { return Error "API Connection Failed" }
+                let dummyLlmCaller : LlmCaller =
+                    fun _ _ -> async { return Error "API Connection Failed" }
 
-                    let dummyExecutor : ToolExecutor =
-                        fun _ _ -> async { return "tool output" }
+                let dummyExecutor : ToolExecutor =
+                    fun _ _ -> async { return "tool output" }
 
-                    let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage; ChatRequestUserMessage("test") :> ChatRequestMessage ]
+                let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage; ChatRequestUserMessage("test") :> ChatRequestMessage ]
 
-                    let! result = AgentPipeline.runTurnLoop dummyLlmCaller dummyExecutor [] Set.empty initialState
+                let! result = AgentPipeline.runTurnLoop dummyLlmCaller dummyExecutor [] Set.empty initialState
 
-                    Expect.isTrue result.Failed "Expected turn to fail on API error"
-                    Expect.equal result.Error (Some "API Connection Failed") "Expected matching error string"
-                    Expect.equal result.ExitReason (ApiError "API Connection Failed") "Expected ApiError exit reason"
-                    return ()
-                }
+                match result.Outcome with
+                | TurnOutcome.Failed (reason, error) ->
+                    let actual = {| Reason = reason; Error = error |}
+                    let expected = {| Reason = ExitReason.ApiError "API Connection Failed"; Error = Some "API Connection Failed" |}
+                    Expect.equal actual expected "Expected API error outcome"
+                | outcome ->
+                    failtestf "Expected failed outcome, got %A" outcome
             }
         ]

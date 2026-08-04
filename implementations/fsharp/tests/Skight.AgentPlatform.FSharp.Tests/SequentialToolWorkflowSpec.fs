@@ -18,6 +18,26 @@ module SequentialToolWorkflowSpec =
         let choice = AzureOpenAIModelFactory.ChatChoice(message = responseMsg, index = 0, finishReason = Nullable(CompletionsFinishReason.Stopped))
         AzureOpenAIModelFactory.ChatCompletions(null, DateTimeOffset.UtcNow, [ choice ], null, null, null)
 
+    let private (|AssistantMessage|_|) (msg: ChatRequestMessage) =
+        match msg with
+        | :? ChatRequestAssistantMessage as assistant -> Some assistant
+        | _ -> None
+
+    let private (|ToolMessage|_|) (msg: ChatRequestMessage) =
+        match msg with
+        | :? ChatRequestToolMessage as tool -> Some tool
+        | _ -> None
+
+    let private (|FunctionToolCall|_|) (toolCall: ChatCompletionsToolCall) =
+        match toolCall with
+        | :? ChatCompletionsFunctionToolCall as fnCall -> Some fnCall
+        | _ -> None
+
+    let private tryGetFirstFunctionToolCallName (assistant: ChatRequestAssistantMessage) =
+        assistant.ToolCalls
+        |> Seq.tryHead
+        |> Option.bind (function | FunctionToolCall fnCall -> Some fnCall.Name | _ -> None)
+
     [<Tests>]
     let sequentialToolWorkflowTests =
         testList "Multi-Turn Sequential Tool Execution Expecto Spec" [
@@ -26,7 +46,7 @@ module SequentialToolWorkflowSpec =
                 let callCounter = ref 0
 
                 let mockLlmCaller : LlmCaller =
-                    fun _ msgs -> async {
+                    fun _ _ -> async {
                         incr callCounter
                         match !callCounter with
                         | 1 -> return Ok (createToolCallCompletions "call_weather_123" "get_weather" "{\"location\":\"Tokyo\"}")
@@ -36,7 +56,7 @@ module SequentialToolWorkflowSpec =
                     }
 
                 let mockExecutor : ToolExecutor =
-                    fun name args -> async {
+                    fun name _ -> async {
                         match name with
                         | "get_weather" -> return "25°C, Sunny"
                         | "search_contacts" -> return "alice@example.com"
@@ -58,30 +78,38 @@ module SequentialToolWorkflowSpec =
 
                 let! result = AgentPipeline.runTurnLoop mockLlmCaller mockExecutor [] registeredNamesSet initialState
 
-                Expect.isTrue result.Completed "Turn should complete successfully"
-                Expect.isFalse result.Failed "Turn should not fail"
-                Expect.equal result.ApiCalls 3 "Should make exactly 3 API calls"
-                Expect.equal result.FinalResponse "Successfully retrieved Tokyo weather (25°C, Sunny) and emailed Alice (alice@example.com)." "Final response text match"
-                Expect.equal result.Messages.Length 7 "Message history length should be 7"
+                match result.Outcome with
+                | TurnOutcome.Completed finalResponse ->
+                    let actual = {| ApiCalls = result.ApiCalls; FinalResponse = finalResponse; MessageCount = result.Messages.Length |}
+                    let expected = {| ApiCalls = 3; FinalResponse = "Successfully retrieved Tokyo weather (25°C, Sunny) and emailed Alice (alice@example.com)."; MessageCount = 7 |}
+                    Expect.equal actual expected "Expected successful multi-turn completion"
+                | outcome ->
+                    failtestf "Expected completed outcome, got %A" outcome
 
-                let asstMsg1 = result.Messages.[2] :?> ChatRequestAssistantMessage
-                Expect.isNotNull asstMsg1.ToolCalls "Assistant msg 1 should have tool calls"
-                Expect.equal (asstMsg1.ToolCalls.[0] :?> ChatCompletionsFunctionToolCall).Name "get_weather" "First tool call name"
+                match result.Messages.[2], result.Messages.[3], result.Messages.[4], result.Messages.[5], result.Messages.[6] with
+                | AssistantMessage asstMsg1, ToolMessage toolMsg1, AssistantMessage asstMsg2, ToolMessage toolMsg2, AssistantMessage asstMsg3 ->
+                    let actual = {|
+                        FirstToolName = tryGetFirstFunctionToolCallName asstMsg1
+                        FirstToolResult = toolMsg1.Content
+                        FirstToolCallId = toolMsg1.ToolCallId
+                        SecondToolName = tryGetFirstFunctionToolCallName asstMsg2
+                        SecondToolResult = toolMsg2.Content
+                        SecondToolCallId = toolMsg2.ToolCallId
+                        FinalAssistantText = asstMsg3.Content
+                    |}
 
-                let toolMsg1 = result.Messages.[3] :?> ChatRequestToolMessage
-                Expect.equal toolMsg1.Content "25°C, Sunny" "First tool result content"
-                Expect.equal toolMsg1.ToolCallId "call_weather_123" "First tool call ID"
+                    let expected = {|
+                        FirstToolName = Some "get_weather"
+                        FirstToolResult = "25°C, Sunny"
+                        FirstToolCallId = "call_weather_123"
+                        SecondToolName = Some "search_contacts"
+                        SecondToolResult = "alice@example.com"
+                        SecondToolCallId = "call_contact_456"
+                        FinalAssistantText = "Successfully retrieved Tokyo weather (25°C, Sunny) and emailed Alice (alice@example.com)."
+                    |}
 
-                let asstMsg2 = result.Messages.[4] :?> ChatRequestAssistantMessage
-                Expect.isNotNull asstMsg2.ToolCalls "Assistant msg 2 should have tool calls"
-                Expect.equal (asstMsg2.ToolCalls.[0] :?> ChatCompletionsFunctionToolCall).Name "search_contacts" "Second tool call name"
-
-                let toolMsg2 = result.Messages.[5] :?> ChatRequestToolMessage
-                Expect.equal toolMsg2.Content "alice@example.com" "Second tool result content"
-                Expect.equal toolMsg2.ToolCallId "call_contact_456" "Second tool call ID"
-
-                let asstMsg3 = result.Messages.[6] :?> ChatRequestAssistantMessage
-                Expect.equal asstMsg3.Content "Successfully retrieved Tokyo weather (25°C, Sunny) and emailed Alice (alice@example.com)." "Final assistant message content"
-                return ()
+                    Expect.equal actual expected "Expected sequential tool-call message transcript"
+                | _ ->
+                    failtest "Unexpected message shape for sequential tool workflow"
             }
         ]

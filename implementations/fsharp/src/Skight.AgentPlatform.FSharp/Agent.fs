@@ -17,14 +17,9 @@ module AgentPipeline =
         if state.InterruptRequested then
             printfn "  [Turn Exit] Turn interrupted by user."
             Exit {
-                FinalResponse = ""
+                Outcome = TurnOutcome.Interrupted ExitReason.Interrupted
                 Messages = state.Messages
                 ApiCalls = state.ApiCalls
-                Completed = false
-                Failed = false
-                Interrupted = true
-                ExitReason = Interrupted
-                Error = None
             }
         else
             Continue state
@@ -34,14 +29,9 @@ module AgentPipeline =
         if state.ApiCalls >= state.Config.MaxIterations then
             printfn "  [Turn Exit] Reached max iterations (%d)." state.Config.MaxIterations
             Exit {
-                FinalResponse = "Reached maximum iteration limit."
+                Outcome = TurnOutcome.Failed (ExitReason.BudgetExhausted, Some "Budget exhausted")
                 Messages = state.Messages
                 ApiCalls = state.ApiCalls
-                Completed = false
-                Failed = true
-                Interrupted = false
-                ExitReason = BudgetExhausted
-                Error = Some "Budget exhausted"
             }
         else
             Continue { state with ApiCalls = state.ApiCalls + 1 }
@@ -148,27 +138,17 @@ module AgentPipeline =
                 printfn "Assistant: %s" fallbackText
                 let updatedHistory = state.Messages @ [ ChatRequestAssistantMessage(fallbackText) :> ChatRequestMessage ]
                 Exit {
-                    FinalResponse = fallbackText
+                    Outcome = TurnOutcome.Completed fallbackText
                     Messages = updatedHistory
                     ApiCalls = state.ApiCalls
-                    Completed = true
-                    Failed = false
-                    Interrupted = false
-                    ExitReason = TextResponse fallbackText
-                    Error = None
                 }
         else
             printfn "Assistant: %s" finalText
             let updatedHistory = state.Messages @ [ ChatRequestAssistantMessage(finalText) :> ChatRequestMessage ]
             Exit {
-                FinalResponse = finalText
+                Outcome = TurnOutcome.Completed finalText
                 Messages = updatedHistory
                 ApiCalls = state.ApiCalls
-                Completed = true
-                Failed = false
-                Interrupted = false
-                ExitReason = TextResponse finalText
-                Error = None
             }
 
     /// Pure, Tail-Recursive 4-Phase Turn Loop Function
@@ -192,25 +172,15 @@ module AgentPipeline =
             match apiResult with
             | Error err ->
                 return {
-                    FinalResponse = ""
+                    Outcome = TurnOutcome.Failed (ExitReason.ApiError err, Some err)
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
-                    Completed = false
-                    Failed = true
-                    Interrupted = false
-                    ExitReason = ApiError err
-                    Error = Some err
                 }
             | Ok completions when completions.Choices.Count = 0 ->
                 return {
-                    FinalResponse = ""
+                    Outcome = TurnOutcome.Failed (ExitReason.NoResponse "No choices returned", Some "No choices returned from LLM")
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
-                    Completed = false
-                    Failed = true
-                    Interrupted = false
-                    ExitReason = NoResponse "No choices returned"
-                    Error = Some "No choices returned from LLM"
                 }
             | Ok completions ->
                 let choice = completions.Choices.[0]
