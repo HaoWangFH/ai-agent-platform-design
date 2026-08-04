@@ -42,6 +42,11 @@ type AgentConfig = {
     Model: string
 }
 
+type AgentSessionState = {
+    Messages: AgentMessage list
+    InterruptRequested: bool
+}
+
 type ToolDefinition = {
     Name: string
     Description: string
