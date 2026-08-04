@@ -272,49 +272,22 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
                     return Error (ApiCallFailed ex.Message)
             }
 
-    let beginTurn (config: AgentConfig) (userInput: string) (session: AgentSessionState) : TurnState * AgentSessionState =
-        let updatedMessages = session.Messages @ [ UserMessage userInput ]
-        let turnState = {
-            Messages = updatedMessages
-            ApiCalls = 0
-            EmptyContentRetries = 0
-            Command = session.PendingCommand
-            Config = config
-        }
+    let systemPrompt =
+        "You are a helpful AI assistant. You have access to various tools. " +
+        "When asked to perform a task, use the tools to gather information and take actions before answering."
 
-        let nextSession = {
-            Messages = updatedMessages
-            PendingCommand = RunTurn
-        }
-
-        turnState, nextSession
-
-    let applyTurnResult (result: TurnResult) (session: AgentSessionState) : AgentSessionState =
-        { session with Messages = result.Messages }
-
-    let requestInterrupt (session: AgentSessionState) : AgentSessionState =
-        { session with PendingCommand = InterruptTurn }
-
-    let mutable sessionState : AgentSessionState = {
-        Messages = []
-        PendingCommand = RunTurn
-    }
-
-    do
-        let systemPrompt =
-            "You are a helpful AI assistant. You have access to various tools. " +
-            "When asked to perform a task, use the tools to gather information and take actions before answering."
-        sessionState <- { sessionState with Messages = [ SystemMessage systemPrompt ] }
+    let mutable sessionState : AgentSessionState =
+        AgentSession.initialize systemPrompt
 
     member _.RequestInterrupt() =
-        sessionState <- requestInterrupt sessionState
+        sessionState <- AgentSession.requestInterrupt sessionState
 
     /// Executes a turn using the composable functional loop pipeline
     member _.RunAsync(userInput: string, ?customLlmCaller: LlmCaller, ?customExecutor: ToolExecutor) : Async<TurnResult> =
         async {
             // Phase 1: Turn Prologue
             printfn "\nUser: %s" userInput
-            let initialState, nextSessionState = beginTurn config userInput sessionState
+            let initialState, nextSessionState = AgentSession.beginTurn config userInput sessionState
             sessionState <- nextSessionState
 
             let activeLlmCaller = defaultArg customLlmCaller defaultLlmCaller
@@ -326,6 +299,6 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
             let! result = AgentPipeline.runTurnLoop activeLlmCaller activeExecutor registeredSchemas registeredNamesSet initialState
 
             // Sync canonical state
-            sessionState <- applyTurnResult result sessionState
+            sessionState <- AgentSession.applyTurnResult result sessionState
             return result
         }

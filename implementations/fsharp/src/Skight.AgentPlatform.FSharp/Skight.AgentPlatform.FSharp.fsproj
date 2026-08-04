@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="Types.fs" />
     <Compile Include="ToolRegistry.fs" />
+    <Compile Include="AgentSession.fs" />
     <Compile Include="Agent.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
