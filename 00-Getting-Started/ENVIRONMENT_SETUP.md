@@ -4,7 +4,7 @@ According to the AI-EOS Phase 0 specifications, environment setup should be a on
 
 ## 1. Core Development Tools (Human)
 - **Visual Studio 2026** or **VS Code** (Recommended with C# Dev Kit and Ionide for F# extensions)
-- **.NET 8.0 SDK** (or a higher version required by the project)
+- **.NET 10.0 SDK** (or a higher version required by the project)
 
 ## 2. AI Assistance Tools
 - **GitHub Copilot**: Used for Phase 5 (Implementation), providing real-time code completion and refactoring within the IDE.

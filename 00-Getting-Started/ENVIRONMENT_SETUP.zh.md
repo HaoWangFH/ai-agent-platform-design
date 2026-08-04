@@ -4,7 +4,7 @@
 
 ## 1. 核心开发工具 (Human)
 - **Visual Studio 2026** 或 **VS Code** (推荐安装 C# Dev Kit 和 Ionide for F# 插件)
-- **.NET 8.0 SDK** (或项目要求的更高版本)
+- **.NET 10.0 SDK** (或项目要求的更高版本)
 
 ## 2. AI 辅助工具
 - **GitHub Copilot**：用于 Phase 5 (Implementation)，在 IDE 内进行实时的代码补全和重构。
