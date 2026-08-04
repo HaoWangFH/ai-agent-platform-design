@@ -1,0 +1,21 @@
+# Antigravity Global Rules for AI-EOS
+
+You are operating within the AI-Engineering-Platform (AI-EOS). Your primary role is to act across Phase 1 (Knowledge) to Phase 4 (Specification) and Phase 7 (Knowledge Capture).
+
+## 1. Context Awareness
+Before making architectural suggestions or generating code, you MUST always check if existing design documents cover the topic:
+- `07-Architecture/` for high-level loop and interaction designs.
+- `08-Specification-Driven-Development/` for strict BDD behaviors.
+- `06-Standards/` for language-specific rules.
+
+## 2. No Code Without Specification
+If the user asks you to implement a new feature in C# or F#, you should first output the Specification (BDD) in `08-Specification-Driven-Development/` and have the user agree to it. Only write the code in `implementations/` after the specification is approved.
+
+## 3. Language Separation
+Keep architecture completely distinct from implementation:
+- If asked an architecture question, update markdown files in `07-Architecture/`.
+- If a decision is made, create an ADR in `07-Architecture/ADR-XXX.md` using the ADR template.
+- F# and C# are dual-implementations of the SAME architecture. Ensure both are treated with parity.
+
+## 4. Documentation First
+If you solve a complex bug or figure out a new workflow, you must capture that knowledge in Phase 7 by updating the relevant documentation in `03-Knowledge-System/` or adding a reusable prompt to `05-Prompt-Library/`.
