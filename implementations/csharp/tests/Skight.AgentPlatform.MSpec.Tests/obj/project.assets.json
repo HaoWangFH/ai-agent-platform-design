@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
     "net8.0": {
       "Azure.AI.OpenAI/1.0.0-beta.17": {
@@ -79,7 +79,7 @@
           "lib/netstandard1.3/Machine.Specifications.dll": {}
         }
       },
-      "Machine.Specifications.Runner.VisualStudio/2.10.2": {
+      "Machine.Specifications.Runner.VisualStudio/2.10.3": {
         "type": "package",
         "dependencies": {
           "Mono.Cecil": "[0.10.0, 0.11.0)"
@@ -1917,10 +1917,10 @@
         "machine.specifications.nuspec"
       ]
     },
-    "Machine.Specifications.Runner.VisualStudio/2.10.2": {
-      "sha512": "LU8yUTBiYqMvVCAaE3aJ1lVm1BjDpibcdTRFsUhZqyhw+9qkaZCTr5YpH6xAMyTvWbV431ftBHTZnNK6BxzVmw==",
+    "Machine.Specifications.Runner.VisualStudio/2.10.3": {
+      "sha512": "JcssH1NAsCfNcy+6aGrlFyVHan35I5H2mCk5lH9DZik51Q6BqATAibdosabIhRqvgAkaQPDHEwz20N+5MtQfQw==",
       "type": "package",
-      "path": "machine.specifications.runner.visualstudio/2.10.2",
+      "path": "machine.specifications.runner.visualstudio/2.10.3",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -1934,7 +1934,7 @@
         "build/net452/Mono.Cecil.dll",
         "build/netcoreapp2.1/Machine.Specifications.Runner.VisualStudio.props",
         "build/netcoreapp2.1/Machine.TestAdapter.dll",
-        "machine.specifications.runner.visualstudio.2.10.2.nupkg.sha512",
+        "machine.specifications.runner.visualstudio.2.10.3.nupkg.sha512",
         "machine.specifications.runner.visualstudio.nuspec"
       ]
     },
@@ -5766,7 +5766,7 @@
     "net8.0": [
       "FluentAssertions >= 6.12.0",
       "Machine.Specifications >= 1.1.0",
-      "Machine.Specifications.Runner.VisualStudio >= 2.10.2",
+      "Machine.Specifications.Runner.VisualStudio >= 2.10.3",
       "Microsoft.NET.Test.Sdk >= 17.8.0",
       "Skight.AgentPlatform >= 1.0.0"
     ]
@@ -5778,11 +5778,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\Skight.AgentPlatform.MSpec.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\Skight.AgentPlatform.MSpec.Tests.csproj",
       "projectName": "Skight.AgentPlatform.MSpec.Tests",
-      "projectPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\Skight.AgentPlatform.MSpec.Tests.csproj",
+      "projectPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\Skight.AgentPlatform.MSpec.Tests.csproj",
       "packagesPath": "C:\\Users\\hwang5\\.nuget\\packages\\",
-      "outputPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\obj\\",
+      "outputPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -5802,10 +5802,11 @@
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
-            "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj": {
-              "projectPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj"
+            "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj": {
+              "projectPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj"
             }
           }
         }
@@ -5820,10 +5821,11 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.100"
+      "SdkAnalysisLevel": "10.0.300"
     },
     "frameworks": {
       "net8.0": {
+        "framework": "net8.0",
         "targetAlias": "net8.0",
         "dependencies": {
           "FluentAssertions": {
@@ -5836,7 +5838,7 @@
           },
           "Machine.Specifications.Runner.VisualStudio": {
             "target": "Package",
-            "version": "[2.10.2, )"
+            "version": "[2.10.3, )"
           },
           "Microsoft.NET.Test.Sdk": {
             "target": "Package",
@@ -5854,12 +5856,26 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.29, 8.0.29]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[8.0.29, 8.0.29]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.29, 8.0.29]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

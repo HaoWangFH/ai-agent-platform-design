@@ -1,14 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "KOOg6h0ZfJM=",
+  "dgSpecHash": "uIdUMd6n0no=",
   "success": true,
-  "projectFilePath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\Skight.AgentPlatform.MSpec.Tests.csproj",
+  "projectFilePath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.MSpec.Tests\\Skight.AgentPlatform.MSpec.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\hwang5\\.nuget\\packages\\azure.ai.openai\\1.0.0-beta.17\\azure.ai.openai.1.0.0-beta.17.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\azure.core\\1.39.0\\azure.core.1.39.0.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\fluentassertions\\6.12.0\\fluentassertions.6.12.0.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\machine.specifications\\1.1.0\\machine.specifications.1.1.0.nupkg.sha512",
-    "C:\\Users\\hwang5\\.nuget\\packages\\machine.specifications.runner.visualstudio\\2.10.2\\machine.specifications.runner.visualstudio.2.10.2.nupkg.sha512",
+    "C:\\Users\\hwang5\\.nuget\\packages\\machine.specifications.runner.visualstudio\\2.10.3\\machine.specifications.runner.visualstudio.2.10.3.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\1.1.1\\microsoft.bcl.asyncinterfaces.1.1.1.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\microsoft.codecoverage\\17.8.0\\microsoft.codecoverage.17.8.0.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\microsoft.net.test.sdk\\17.8.0\\microsoft.net.test.sdk.17.8.0.nupkg.sha512",
@@ -91,7 +91,10 @@
     "C:\\Users\\hwang5\\.nuget\\packages\\system.xml.readerwriter\\4.0.11\\system.xml.readerwriter.4.0.11.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\system.xml.xdocument\\4.0.11\\system.xml.xdocument.4.0.11.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\system.xml.xpath\\4.0.1\\system.xml.xpath.4.0.1.nupkg.sha512",
-    "C:\\Users\\hwang5\\.nuget\\packages\\system.xml.xpath.xdocument\\4.0.1\\system.xml.xpath.xdocument.4.0.1.nupkg.sha512"
+    "C:\\Users\\hwang5\\.nuget\\packages\\system.xml.xpath.xdocument\\4.0.1\\system.xml.xpath.xdocument.4.0.1.nupkg.sha512",
+    "C:\\Users\\hwang5\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.29\\microsoft.windowsdesktop.app.ref.8.0.29.nupkg.sha512",
+    "C:\\Users\\hwang5\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.29\\microsoft.netcore.app.ref.8.0.29.nupkg.sha512",
+    "C:\\Users\\hwang5\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.29\\microsoft.aspnetcore.app.ref.8.0.29.nupkg.sha512"
   ],
   "logs": []
 }

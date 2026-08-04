@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj": {}
+    "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj": {}
   },
   "projects": {
-    "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj": {
+    "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj",
+        "projectUniqueName": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj",
         "projectName": "Skight.AgentPlatform",
-        "projectPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj",
+        "projectPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj",
         "packagesPath": "C:\\Users\\hwang5\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\obj\\",
+        "outputPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -31,6 +31,7 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {}
           }
@@ -45,10 +46,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "Azure.AI.OpenAI": {
@@ -67,23 +69,41 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.29, 8.0.29]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.29, 8.0.29]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.29, 8.0.29]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.29, 8.0.29]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj": {
+    "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj",
+        "projectUniqueName": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj",
         "projectName": "Skight.AgentPlatform.LightBDD.Tests",
-        "projectPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj",
+        "projectPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\Skight.AgentPlatform.LightBDD.Tests.csproj",
         "packagesPath": "C:\\Users\\hwang5\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\obj\\",
+        "outputPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\tests\\Skight.AgentPlatform.LightBDD.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -103,10 +123,11 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj": {
-                "projectPath": "c:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj"
+              "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj": {
+                "projectPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj"
               }
             }
           }
@@ -121,10 +142,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "FluentAssertions": {
@@ -157,12 +179,26 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.29, 8.0.29]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.29, 8.0.29]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.29, 8.0.29]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

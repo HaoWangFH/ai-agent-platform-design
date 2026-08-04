@@ -9,7 +9,7 @@
       "Skight.AgentPlatform.FSharp/1.0.0": {
         "dependencies": {
           "Azure.AI.OpenAI": "1.0.0-beta.17",
-          "FSharp.Core": "10.0.100"
+          "FSharp.Core": "10.1.302"
         },
         "runtime": {
           "Skight.AgentPlatform.FSharp.dll": {}
@@ -40,11 +40,11 @@
           }
         }
       },
-      "FSharp.Core/10.0.100": {
+      "FSharp.Core/10.1.302": {
         "runtime": {
           "lib/netstandard2.1/FSharp.Core.dll": {
-            "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.1.25.52411"
+            "assemblyVersion": "10.1.0.0",
+            "fileVersion": "10.103.226.33009"
           }
         },
         "resources": {
@@ -138,12 +138,12 @@
       "path": "azure.core/1.39.0",
       "hashPath": "azure.core.1.39.0.nupkg.sha512"
     },
-    "FSharp.Core/10.0.100": {
+    "FSharp.Core/10.1.302": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-c/r6T/HE9MWL0O0OispLtaKhVwDsiYQlLS249LoxSo1HNH/wfc0f5DE4pI6WpTXkCEdeXa66K5f9FmKLr/0cmw==",
-      "path": "fsharp.core/10.0.100",
-      "hashPath": "fsharp.core.10.0.100.nupkg.sha512"
+      "sha512": "sha512-bN7XMQrAQg1dyHScJ7FcsznERBkvm74LtIo1O6C5mUzgbDqSwNbDpb3+nBGaJAjDmtC/suK5Vx5pFysKY6Hm+Q==",
+      "path": "fsharp.core/10.1.302",
+      "hashPath": "fsharp.core.10.1.302.nupkg.sha512"
     },
     "Microsoft.Bcl.AsyncInterfaces/1.1.1": {
       "type": "package",

@@ -14,7 +14,7 @@
     <SourceRoot Include="C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages\" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgFSharp_Core Condition=" '$(PkgFSharp_Core)' == '' ">C:\Users\hwang5\.nuget\packages\fsharp.core\10.0.100</PkgFSharp_Core>
+    <PkgFSharp_Core Condition=" '$(PkgFSharp_Core)' == '' ">C:\Users\hwang5\.nuget\packages\fsharp.core\10.1.302</PkgFSharp_Core>
     <PkgAzure_AI_OpenAI Condition=" '$(PkgAzure_AI_OpenAI)' == '' ">C:\Users\hwang5\.nuget\packages\azure.ai.openai\1.0.0-beta.17</PkgAzure_AI_OpenAI>
   </PropertyGroup>
 </Project>

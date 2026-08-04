@@ -10,7 +10,7 @@ open System.Reflection
 [<assembly: System.Reflection.AssemblyCompanyAttribute("Skight.AgentPlatform.FSharp")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aa4674cc81dc97f2cf549aed4f32ea3f7c314d20")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e6ac098846a032aed6e42424384baac897067265")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("Skight.AgentPlatform.FSharp")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("Skight.AgentPlatform.FSharp")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]
