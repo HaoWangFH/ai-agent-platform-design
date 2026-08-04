@@ -41,6 +41,14 @@ type LlmTurnResponse = {
     ToolCalls: ToolCall list
 }
 
+type StreamChunk =
+    | TextDelta of Content: string
+    | ToolCallDelta of Index: int * Id: ToolCallId option * Name: ToolName option * ArgsFragment: string
+    | StreamCompleted of FinishReason: string
+
+type StreamAggregationError =
+    | PartialResponse of PartialText: string
+
 type LlmError =
     | NoChoicesReturned
     | ApiCallFailed of Message: string

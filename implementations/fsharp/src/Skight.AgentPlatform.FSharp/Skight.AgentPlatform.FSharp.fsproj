@@ -10,6 +10,7 @@
     <Compile Include="Types.fs" />
     <Compile Include="ToolRegistry.fs" />
     <Compile Include="AgentSession.fs" />
+    <Compile Include="SdkAdapter.fs" />
     <Compile Include="AgentPipeline.fs" />
     <Compile Include="AgentRunner.fs" />
     <Compile Include="Agent.fs" />
@@ -18,6 +19,7 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.17" />
+    <PackageReference Include="FSharp.Control.TaskSeq" Version="1.1.1" />
   </ItemGroup>
 
 </Project>
