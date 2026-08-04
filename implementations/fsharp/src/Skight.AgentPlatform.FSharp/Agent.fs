@@ -67,7 +67,7 @@ module AgentPipeline =
         |> compressContextIfNeeded limit
 
     /// Step 2.4: Execute API Call with Exponential Backoff Retry (Pure Async Recursion)
-    let rec callLlmWithRetry (llmCaller: LlmCaller) (schemas: FunctionDefinition list) (maxRetries: int) (retryCount: int) (msgs: AgentMessage list) : Async<Result<LlmTurnResponse, string>> =
+    let rec callLlmWithRetry (llmCaller: LlmCaller) (schemas: ToolSchema list) (maxRetries: int) (retryCount: int) (msgs: AgentMessage list) : Async<Result<LlmTurnResponse, string>> =
         async {
             let! result = llmCaller schemas msgs
             match result with
@@ -145,7 +145,7 @@ module AgentPipeline =
             }
 
     /// Pure, Tail-Recursive 4-Phase Turn Loop Function
-    let rec runTurnLoop (llmCaller: LlmCaller) (executor: ToolExecutor) (registeredSchemas: FunctionDefinition list) (registeredNamesSet: Set<string>) (state: TurnState) : Async<TurnResult> =
+    let rec runTurnLoop (llmCaller: LlmCaller) (executor: ToolExecutor) (registeredSchemas: ToolSchema list) (registeredNamesSet: Set<string>) (state: TurnState) : Async<TurnResult> =
         async {
             // Pipeline Step 2.1: Pre-API Checks (Interrupt Guard -> Budget Guard)
             match checkInterrupt state with
@@ -238,6 +238,13 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
             ToolCalls = toolCalls
         }
 
+    let toFunctionDefinition (schema: ToolSchema) : FunctionDefinition =
+        FunctionDefinition(
+            Name = schema.Name,
+            Description = schema.Description,
+            Parameters = BinaryData.FromString(schema.ParametersJson)
+        )
+
     // Standard default Azure.AI.OpenAI LLM caller implementation
     let defaultLlmCaller : LlmCaller =
         fun schemas msgs ->
@@ -246,7 +253,7 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
                 let reqOptions = ChatCompletionsOptions(config.Model, requestMessages)
                 reqOptions.Temperature <- Nullable(0.7f)
                 for schema in schemas do
-                    reqOptions.Tools.Add(ChatCompletionsFunctionToolDefinition(schema))
+                    reqOptions.Tools.Add(ChatCompletionsFunctionToolDefinition(toFunctionDefinition schema))
                 try
                     let! resp = client.GetChatCompletionsAsync(reqOptions) |> Async.AwaitTask
                     let completions = resp.Value

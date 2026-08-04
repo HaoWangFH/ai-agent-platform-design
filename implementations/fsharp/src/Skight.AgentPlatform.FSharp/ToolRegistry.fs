@@ -1,24 +1,22 @@
 namespace Skight.AgentPlatform.FSharp
 
-open System
 open System.Collections.Generic
 open System.Text.Json
-open Azure.AI.OpenAI
 
 type ToolRegistry() =
     let tools = Dictionary<string, string -> Async<string>>()
-    let schemas = List<FunctionDefinition>()
+    let schemas = List<ToolSchema>()
 
     member this.Register(name: string, description: string, handler: string -> Async<string>, parametersJson: string) =
         tools.[name] <- handler
-        
-        use doc = JsonDocument.Parse(parametersJson)
-        let functionDef = FunctionDefinition(
-            Name = name,
-            Description = description,
-            Parameters = BinaryData.FromString(parametersJson)
-        )
-        schemas.Add(functionDef)
+
+        use _ = JsonDocument.Parse(parametersJson)
+        let schema = {
+            Name = name
+            Description = description
+            ParametersJson = parametersJson
+        }
+        schemas.Add(schema)
 
     member this.ExecuteToolAsync(name: string, argumentsJson: string) : Async<string> =
         async {
@@ -35,7 +33,7 @@ type ToolRegistry() =
     member this.AsExecutor : ToolExecutor =
         fun name args -> this.ExecuteToolAsync(name, args)
 
-    member this.GetToolSchemas() : FunctionDefinition list =
+    member this.GetToolSchemas() : ToolSchema list =
         Seq.toList schemas
 
     member this.GetRegisteredNames() : string list =

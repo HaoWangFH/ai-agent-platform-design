@@ -1,7 +1,5 @@
 namespace Skight.AgentPlatform.FSharp
 
-open Azure.AI.OpenAI
-
 type ExitReason =
     | TextResponse of string
     | BudgetExhausted
@@ -51,6 +49,12 @@ type ToolDefinition = {
     Handler: string -> Async<string>
 }
 
+type ToolSchema = {
+    Name: string
+    Description: string
+    ParametersJson: string
+}
+
 /// Immutable turn state passed through pure function pipelines
 type TurnState = {
     Messages: AgentMessage list
@@ -66,5 +70,5 @@ type StepResult<'State, 'Result> =
     | Exit of 'Result
 
 /// Composable function type signatures for dependency injection and partial application
-type LlmCaller = FunctionDefinition list -> AgentMessage list -> Async<Result<LlmTurnResponse, string>>
+type LlmCaller = ToolSchema list -> AgentMessage list -> Async<Result<LlmTurnResponse, string>>
 type ToolExecutor = string -> string -> Async<string>
