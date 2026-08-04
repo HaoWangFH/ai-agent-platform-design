@@ -34,7 +34,7 @@ module SequentialToolWorkflowSpec =
                                     Content = "Successfully retrieved Tokyo weather (25°C, Sunny) and emailed Alice (alice@example.com)."
                                     ToolCalls = []
                                 }
-                        | _ -> return Error "Unexpected LLM call beyond expected sequence"
+                        | _ -> return Error (ApiCallFailed "Unexpected LLM call beyond expected sequence")
                     }
 
                 let mockExecutor : ToolExecutor =

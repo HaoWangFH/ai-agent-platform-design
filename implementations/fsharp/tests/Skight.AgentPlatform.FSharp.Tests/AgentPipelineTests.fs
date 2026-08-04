@@ -88,7 +88,7 @@ module AgentPipelineTests =
 
             testAsync "Functional Loop handles LlmCaller error gracefully" {
                 let dummyLlmCaller : LlmCaller =
-                    fun _ _ -> async { return Error "API Connection Failed" }
+                    fun _ _ -> async { return Error (ApiCallFailed "API Connection Failed") }
 
                 let dummyExecutor : ToolExecutor =
                     fun _ _ -> async { return "tool output" }

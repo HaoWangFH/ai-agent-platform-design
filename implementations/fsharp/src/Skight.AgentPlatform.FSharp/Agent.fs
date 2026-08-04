@@ -67,14 +67,19 @@ module AgentPipeline =
         |> prepareApiMessages
         |> compressContextIfNeeded limit
 
+    let llmErrorMessage (err: LlmError) =
+        match err with
+        | NoChoicesReturned -> "No choices returned from LLM"
+        | ApiCallFailed message -> message
+
     /// Step 2.4: Execute API Call with Exponential Backoff Retry (Pure Async Recursion)
-    let rec callLlmWithRetry (llmCaller: LlmCaller) (schemas: ToolSchema list) (maxRetries: int) (retryCount: int) (msgs: AgentMessage list) : Async<Result<LlmTurnResponse, string>> =
+    let rec callLlmWithRetry (llmCaller: LlmCaller) (schemas: ToolSchema list) (maxRetries: int) (retryCount: int) (msgs: AgentMessage list) : Async<Result<LlmTurnResponse, LlmError>> =
         async {
             let! result = llmCaller schemas msgs
             match result with
             | Ok response -> return Ok response
             | Error err ->
-                printfn "  [API Error Retry %d/%d] %s" (retryCount + 1) maxRetries err
+                printfn "  [API Error Retry %d/%d] %s" (retryCount + 1) maxRetries (llmErrorMessage err)
                 if retryCount >= maxRetries - 1 then
                     return Error err
                 else
@@ -164,13 +169,14 @@ module AgentPipeline =
             let! apiResult = callLlmWithRetry llmCaller registeredSchemas stateAfterBudgetCheck.Config.MaxRetries 0 preparedPayload
 
             match apiResult with
-            | Error err when err = "No choices returned from LLM" ->
+            | Error NoChoicesReturned ->
+                let message = llmErrorMessage NoChoicesReturned
                 return {
-                    Outcome = TurnOutcome.Failed (ExitReason.NoResponse "No choices returned", Some err)
+                    Outcome = TurnOutcome.Failed (ExitReason.NoResponse "No choices returned", Some message)
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
                 }
-            | Error err ->
+            | Error (ApiCallFailed err) ->
                 return {
                     Outcome = TurnOutcome.Failed (ExitReason.ApiError err, Some err)
                     Messages = stateAfterBudgetCheck.Messages
@@ -259,11 +265,11 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
                     let! resp = client.GetChatCompletionsAsync(reqOptions) |> Async.AwaitTask
                     let completions = resp.Value
                     if completions.Choices.Count = 0 then
-                        return Error "No choices returned from LLM"
+                        return Error NoChoicesReturned
                     else
                         return Ok (toDomainResponse completions.Choices.[0].Message)
                 with ex ->
-                    return Error ex.Message
+                    return Error (ApiCallFailed ex.Message)
             }
 
     let beginTurn (config: AgentConfig) (userInput: string) (session: AgentSessionState) : TurnState * AgentSessionState =

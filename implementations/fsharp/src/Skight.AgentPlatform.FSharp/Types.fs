@@ -29,6 +29,10 @@ type LlmTurnResponse = {
     ToolCalls: ToolCall list
 }
 
+type LlmError =
+    | NoChoicesReturned
+    | ApiCallFailed of Message: string
+
 type TurnResult = {
     Outcome: TurnOutcome
     Messages: AgentMessage list
@@ -79,5 +83,5 @@ type StepResult<'State, 'Result> =
     | Exit of 'Result
 
 /// Composable function type signatures for dependency injection and partial application
-type LlmCaller = ToolSchema list -> AgentMessage list -> Async<Result<LlmTurnResponse, string>>
+type LlmCaller = ToolSchema list -> AgentMessage list -> Async<Result<LlmTurnResponse, LlmError>>
 type ToolExecutor = string -> string -> Async<string>
