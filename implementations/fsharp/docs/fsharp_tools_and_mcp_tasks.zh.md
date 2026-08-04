@@ -135,7 +135,40 @@ module TerminalTool =
   3. 将 MCP 工具 Schema 转换为 OpenAI JSON Function Schema。
   4. 当 LLM 调用 MCP 工具时，路由 `tools/call` JSON-RPC 请求。
 
-#### 2. F# MCP 客户端架构与代码签名 (`McpAdapter.fs`)
+#### 2. 架构对比：工具调用 (Tool Calling) vs. MCP 协议 (Model Context Protocol)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          LLM Provider (OpenAI / Anthropic)                  │
+└─────────────────────────────────────▲───────────────────────────────────────┘
+                                      │
+                                  Tool Calling
+                             (Model API Protocol)
+                                      │
+┌─────────────────────────────────────▼───────────────────────────────────────┐
+│                        Your AI Agent Platform                               │
+│                         (Acts as MCP Client)                                │
+└───────────────┬─────────────────────────────────────────────┬───────────────┘
+                │                                             │
+         Native Local Tools                               MCP Protocol
+    (In-Process F# / C# Functions)                       (JSON-RPC 2.0)
+                │                                             │
+    ┌───────────┴───────────┐                     ┌───────────▼───────────┐
+    │  read_file, execute   │                     │   External MCP Server │
+    │  (Compiled into App)  │                     │   (Separate Process   │
+    └───────────────────────┘                     │    e.g. SQLite, GitHub)│
+                                                  └───────────────────────┘
+```
+
+| 特性 / 维度 | 工具调用 (Tool Calling / Function Calling) | MCP 协议 (Model Context Protocol) |
+|---|---|---|
+| **本质定义** | 模型提供商（OpenAI、Anthropic、Gemini）内置的 **LLM API 功能机制**。 | 由 Anthropic 创制的连接 Agent 与外部工具/数据的 **开放客户端-服务端集成标准**。 |
+| **作用层级** | 作用于 **Agent** 与 **LLM API** 之间（基于 HTTP REST）。 | 作用于 **Agent (MCP Client)** 与 **外部工具服务 (MCP Server)** 之间（基于 `stdio` IPC 或 `SSE` HTTP）。 |
+| **执行位置** | **进程内 (In-Process)** 执行，直接在应用程序代码中运行。 | **进程外 (Out-of-Process)** 执行，在独立的 MCP 服务端进程或远程服务中运行。 |
+| **复用性** | 应用特定代码。为另一个 Agent 重用工具需要重新编写代码。 | **通用插件生态**。任何 MCP 服务端（如 PostgreSQL、GitHub）可无需修改直接插入**任何 AI Agent**。 |
+| **能力范畴** | 仅支持工具 (函数名称 + JSON 参数)。 | **工具 + 资源 + 提示词**：支持暴露文件树 (`resources/list`)、预制提示词 (`prompts/list`) 和可执行工具 (`tools/list`)。 |
+
+#### 3. F# MCP 客户端架构与代码签名 (`McpAdapter.fs`)
 
 ```fsharp
 namespace Skight.AgentPlatform.FSharp

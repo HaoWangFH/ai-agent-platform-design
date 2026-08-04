@@ -135,7 +135,40 @@ module TerminalTool =
   3. Converts MCP tool schemas into OpenAI JSON Function Schemas.
   4. Routes `tools/call` JSON-RPC requests when the LLM invokes an MCP tool.
 
-#### 2. F# MCP Client Architecture & Code Signatures (`McpAdapter.fs`)
+#### 2. Architectural Comparison: Tool Calling vs. MCP (Model Context Protocol)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          LLM Provider (OpenAI / Anthropic)                  │
+└─────────────────────────────────────▲───────────────────────────────────────┘
+                                      │
+                                  Tool Calling
+                             (Model API Protocol)
+                                      │
+┌─────────────────────────────────────▼───────────────────────────────────────┐
+│                        Your AI Agent Platform                               │
+│                         (Acts as MCP Client)                                │
+└───────────────┬─────────────────────────────────────────────┬───────────────┘
+                │                                             │
+         Native Local Tools                               MCP Protocol
+    (In-Process F# / C# Functions)                       (JSON-RPC 2.0)
+                │                                             │
+    ┌───────────┴───────────┐                     ┌───────────▼───────────┐
+    │  read_file, execute   │                     │   External MCP Server │
+    │  (Compiled into App)  │                     │   (Separate Process   │
+    └───────────────────────┘                     │    e.g. SQLite, GitHub)│
+                                                  └───────────────────────┘
+```
+
+| Feature / Dimension | Tool Calling (Function Calling) | MCP (Model Context Protocol) |
+|---|---|---|
+| **What it is** | An **LLM API feature / mechanism** built into model providers (OpenAI, Anthropic, Gemini). | An **open client-server integration standard** created by Anthropic for connecting agents to tools/data. |
+| **Where it operates** | Between **Your Agent** and the **LLM Provider API** (over HTTP REST). | Between **Your Agent (MCP Client)** and **External Tool Services (MCP Server)** (over `stdio` IPC or `SSE` HTTP). |
+| **Execution Location** | Executed **in-process** directly inside your application code (F# / C#). | Executed **out-of-process** inside a standalone MCP server process or remote service. |
+| **Reusability** | App-specific code. Re-implementing a tool for another agent requires rewriting code. | **Universal Plugin Ecosystem**. Any MCP server (e.g. PostgreSQL, GitHub, File System) can be plugged into **any AI agent** without rewriting code. |
+| **Capabilities** | Tools only (Function Name + JSON Arguments). | **Tools + Resources + Prompts**: Exposes file trees (`resources/list`), pre-made prompts (`prompts/list`), and executable tools (`tools/list`). |
+
+#### 3. F# MCP Client Architecture & Code Signatures (`McpAdapter.fs`)
 
 ```fsharp
 namespace Skight.AgentPlatform.FSharp
