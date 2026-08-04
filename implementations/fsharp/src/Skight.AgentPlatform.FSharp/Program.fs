@@ -165,7 +165,7 @@ module Program =
                             printfn "❌ API Call Failed: %s" err
                         | TurnOutcome.Failed _
                         | TurnOutcome.Completed _
-                        | TurnOutcome.Interrupted _ -> ()
+                        | TurnOutcome.Interrupted -> ()
                     with ex ->
                         printfn "Error: %s" ex.Message
 

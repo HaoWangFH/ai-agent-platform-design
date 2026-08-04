@@ -27,10 +27,8 @@ module AgentPipelineTests =
                 let interruptedState = { initialState with Command = InterruptTurn }
 
                 match AgentPipeline.checkInterrupt interruptedState with
-                | Exit { Outcome = TurnOutcome.Interrupted reason; ApiCalls = apiCalls } ->
-                    let actual = {| Reason = reason; ApiCalls = apiCalls |}
-                    let expected = {| Reason = ExitReason.Interrupted; ApiCalls = 0 |}
-                    Expect.equal actual expected "Expected Interrupted outcome"
+                | Exit { Outcome = TurnOutcome.Interrupted; ApiCalls = apiCalls } ->
+                    Expect.equal apiCalls 0 "Expected zero API calls on interrupt"
                 | Exit result ->
                     failtestf "Expected interrupted exit, got %A" result.Outcome
                 | Continue _ ->
@@ -44,7 +42,7 @@ module AgentPipelineTests =
                 match AgentPipeline.checkBudget exhaustedState with
                 | Exit { Outcome = TurnOutcome.Failed (reason, error) } ->
                     let actual = {| Reason = reason; Error = error |}
-                    let expected = {| Reason = ExitReason.BudgetExhausted; Error = Some "Budget exhausted" |}
+                    let expected = {| Reason = FailureReason.BudgetExhausted; Error = Some "Budget exhausted" |}
                     Expect.equal actual expected "Expected budget failure outcome"
                 | Exit result ->
                     failtestf "Expected failed exit, got %A" result.Outcome
@@ -100,7 +98,7 @@ module AgentPipelineTests =
                 match result.Outcome with
                 | TurnOutcome.Failed (reason, error) ->
                     let actual = {| Reason = reason; Error = error |}
-                    let expected = {| Reason = ExitReason.ApiError "API Connection Failed"; Error = Some "API Connection Failed" |}
+                    let expected = {| Reason = FailureReason.ApiError "API Connection Failed"; Error = Some "API Connection Failed" |}
                     Expect.equal actual expected "Expected API error outcome"
                 | outcome ->
                     failtestf "Expected failed outcome, got %A" outcome

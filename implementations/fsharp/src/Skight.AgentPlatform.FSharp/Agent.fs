@@ -18,7 +18,7 @@ module AgentPipeline =
         | InterruptTurn ->
             printfn "  [Turn Exit] Turn interrupted by user."
             Exit {
-                Outcome = TurnOutcome.Interrupted ExitReason.Interrupted
+                Outcome = TurnOutcome.Interrupted
                 Messages = state.Messages
                 ApiCalls = state.ApiCalls
             }
@@ -30,7 +30,7 @@ module AgentPipeline =
         if state.ApiCalls >= state.Config.MaxIterations then
             printfn "  [Turn Exit] Reached max iterations (%d)." state.Config.MaxIterations
             Exit {
-                Outcome = TurnOutcome.Failed (ExitReason.BudgetExhausted, Some "Budget exhausted")
+                Outcome = TurnOutcome.Failed (FailureReason.BudgetExhausted, Some "Budget exhausted")
                 Messages = state.Messages
                 ApiCalls = state.ApiCalls
             }
@@ -172,13 +172,13 @@ module AgentPipeline =
             | Error NoChoicesReturned ->
                 let message = llmErrorMessage NoChoicesReturned
                 return {
-                    Outcome = TurnOutcome.Failed (ExitReason.NoResponse "No choices returned", Some message)
+                    Outcome = TurnOutcome.Failed (FailureReason.NoResponse "No choices returned", Some message)
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
                 }
             | Error (ApiCallFailed err) ->
                 return {
-                    Outcome = TurnOutcome.Failed (ExitReason.ApiError err, Some err)
+                    Outcome = TurnOutcome.Failed (FailureReason.ApiError err, Some err)
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
                 }

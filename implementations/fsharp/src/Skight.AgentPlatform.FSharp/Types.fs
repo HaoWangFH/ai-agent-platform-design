@@ -1,16 +1,14 @@
 namespace Skight.AgentPlatform.FSharp
 
-type ExitReason =
-    | TextResponse of string
+type FailureReason =
     | BudgetExhausted
-    | Interrupted
     | ApiError of string
     | NoResponse of string
 
 type TurnOutcome =
     | Completed of FinalResponse: string
-    | Interrupted of Reason: ExitReason
-    | Failed of Reason: ExitReason * ErrorMessage: string option
+    | Interrupted
+    | Failed of Reason: FailureReason * ErrorMessage: string option
 
 type ToolCall = {
     Id: string
