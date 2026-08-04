@@ -19,3 +19,8 @@ Keep architecture completely distinct from implementation:
 
 ## 4. Documentation First
 If you solve a complex bug or figure out a new workflow, you must capture that knowledge in Phase 7 by updating the relevant documentation in `03-Knowledge-System/` or adding a reusable prompt to `05-Prompt-Library/`.
+
+## 5. Bilingual Documentation
+When generating or updating documentation, you MUST ALWAYS generate two versions:
+- An English version (using standard `.md` naming).
+- A Chinese version (using a `.zh.md` suffix).
