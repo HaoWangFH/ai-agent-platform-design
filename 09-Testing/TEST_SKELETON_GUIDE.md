@@ -1,35 +1,35 @@
-# 验收测试与 Skeleton 生成指南 (Phase 6)
+# Acceptance Testing & Skeleton Generation Guide (Phase 6)
 
-在 Specification-Driven Development (Phase 4) 中，我们通过 BDD 语法定义了预期的系统行为 (如 `AGENT_LOOP_BDD_SPECS.zh.md`)。
-在 Implementation (Phase 5) 和 Verification (Phase 6) 之间，我们需要将这些规范转化为**测试骨架 (Test Skeletons)**。
+In Specification-Driven Development (Phase 4), we define expected system behaviors using BDD syntax (e.g., `AGENT_LOOP_BDD_SPECS.md`).
+Between Implementation (Phase 5) and Verification (Phase 6), we need to translate these specifications into **Test Skeletons**.
 
-## 如何使用 AI 生成测试骨架
+## How to use AI to generate test skeletons
 
-你可以使用 GitHub Copilot Chat 或 ChatGPT，利用以下流程自动生成 C# 或 F# 的测试代码：
+You can use GitHub Copilot Chat or ChatGPT with the following workflow to automatically generate C# or F# test code:
 
-1. **输入上下文**:
-   向 AI 提供 `08-Specification-Driven-Development/AGENT_LOOP_BDD_SPECS.zh.md` 中的某个特定场景。
-2. **要求输出**:
-   要求 AI 使用你选择的测试框架 (C# 的 xUnit 或 F# 的 Expecto) 生成代码骨架。测试中应该包含 Arrange, Act, Assert 的空结构。
+1. **Input Context**:
+   Provide the AI with a specific scenario from `08-Specification-Driven-Development/AGENT_LOOP_BDD_SPECS.md`.
+2. **Request Output**:
+   Ask the AI to generate a code skeleton using your chosen testing framework (xUnit for C# or Expecto for F#). The test should contain empty structures for Arrange, Act, and Assert.
 
-### C# 骨架示例 (xUnit)
+### C# Skeleton Example (xUnit)
 ```csharp
 public class AgentLoopTests
 {
     [Fact]
     public void Given_TokenLimitReached_When_ApiCalled_Then_TriggerCompression()
     {
-        // Arrange: 设置达到 token 限制的对话历史
+        // Arrange: Set up a conversation history that hits the token limit
         
-        // Act: 触发下一次调用
+        // Act: Trigger the next call
         
-        // Assert: 验证最旧的消息被移除，保留了 System Prompt
-        throw new NotImplementedException("骨架已生成，等待实现");
+        // Assert: Verify the oldest message is removed and System Prompt is retained
+        throw new NotImplementedException("Skeleton generated, awaiting implementation");
     }
 }
 ```
 
-### F# 骨架示例 (Expecto)
+### F# Skeleton Example (Expecto)
 ```fsharp
 let agentLoopTests =
     testList "Agent Loop Tests" [
@@ -39,8 +39,8 @@ let agentLoopTests =
             // Act
             
             // Assert
-            failtest "骨架已生成，等待实现"
+            failtest "Skeleton generated, awaiting implementation"
     ]
 ```
 
-遵循此指南，确保所有的 BDD 规范都有对应的自动化测试进行覆盖。
+Follow this guide to ensure all BDD specifications are covered by corresponding automated tests.
