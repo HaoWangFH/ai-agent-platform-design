@@ -3,7 +3,7 @@
 按照 AI-EOS Phase 0 的规范，开发环境的搭建应该是一次性的。以下是参与 `ai-agent-platform-design` (C# 和 F# 实现) 所需的基础环境：
 
 ## 1. 核心开发工具 (Human)
-- **Visual Studio 2022** 或 **VS Code** (推荐安装 C# Dev Kit 和 Ionide for F# 插件)
+- **Visual Studio 2026** 或 **VS Code** (推荐安装 C# Dev Kit 和 Ionide for F# 插件)
 - **.NET 8.0 SDK** (或项目要求的更高版本)
 
 ## 2. AI 辅助工具

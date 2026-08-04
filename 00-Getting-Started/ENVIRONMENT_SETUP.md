@@ -3,7 +3,7 @@
 According to the AI-EOS Phase 0 specifications, environment setup should be a one-time process. The following is the basic environment required to participate in the `ai-agent-platform-design` (C# and F# implementations):
 
 ## 1. Core Development Tools (Human)
-- **Visual Studio 2022** or **VS Code** (Recommended with C# Dev Kit and Ionide for F# extensions)
+- **Visual Studio 2026** or **VS Code** (Recommended with C# Dev Kit and Ionide for F# extensions)
 - **.NET 8.0 SDK** (or a higher version required by the project)
 
 ## 2. AI Assistance Tools
