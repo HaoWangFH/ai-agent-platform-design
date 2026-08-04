@@ -1,12 +1,11 @@
 namespace Skight.AgentPlatform.FSharp.Tests
 
-open Azure.AI.OpenAI
 open Expecto
 open Skight.AgentPlatform.FSharp
 
 module AgentPipelineTests =
 
-    let createTestState (messages: ChatRequestMessage list) : TurnState = {
+    let createTestState (messages: AgentMessage list) : TurnState = {
         Messages = messages
         ApiCalls = 0
         EmptyContentRetries = 0
@@ -24,7 +23,7 @@ module AgentPipelineTests =
         testList "Agent Pipeline Pure Step Specification Tests" [
 
             test "Step 2.1a Interrupt Check returns Exit when interrupt requested" {
-                let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage ]
+                let initialState = createTestState [ SystemMessage "sys" ]
                 let interruptedState = { initialState with InterruptRequested = true }
 
                 match AgentPipeline.checkInterrupt interruptedState with
@@ -39,7 +38,7 @@ module AgentPipelineTests =
             }
 
             test "Step 2.1b Budget Check returns Exit when max iterations reached" {
-                let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage ]
+                let initialState = createTestState [ SystemMessage "sys" ]
                 let exhaustedState = { initialState with ApiCalls = 5 }
 
                 match AgentPipeline.checkBudget exhaustedState with
@@ -54,8 +53,8 @@ module AgentPipelineTests =
             }
 
             test "Step 2.3 Context Window Protection trims middle history when exceeding limit" {
-                let systemMsg = ChatRequestSystemMessage("system prompt") :> ChatRequestMessage
-                let history = systemMsg :: ([ 1 .. 15 ] |> List.map (fun i -> ChatRequestUserMessage(sprintf "msg %d" i) :> ChatRequestMessage))
+                let systemMsg = SystemMessage "system prompt"
+                let history = systemMsg :: ([ 1 .. 15 ] |> List.map (fun i -> UserMessage(sprintf "msg %d" i)))
 
                 let compressed = AgentPipeline.compressContextIfNeeded 10 history
                 let actual = {| IsWithinLimit = compressed.Length <= 10; Head = compressed.Head |}
@@ -64,7 +63,7 @@ module AgentPipelineTests =
             }
 
             test "Step 2.7 Process Text Response finalizes turn with clean text" {
-                let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage; ChatRequestUserMessage("Hi") :> ChatRequestMessage ]
+                let initialState = createTestState [ SystemMessage "sys"; UserMessage "Hi" ]
 
                 match AgentPipeline.processTextResponse "Hello world!" initialState with
                 | Exit { Outcome = TurnOutcome.Completed finalText } ->
@@ -76,7 +75,7 @@ module AgentPipelineTests =
             }
 
             test "Step 2.7 Empty Response Recovery nudges prompt on empty content" {
-                let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage; ChatRequestUserMessage("Hi") :> ChatRequestMessage ]
+                let initialState = createTestState [ SystemMessage "sys"; UserMessage "Hi" ]
 
                 match AgentPipeline.processTextResponse "" initialState with
                 | Continue nextState ->
@@ -94,7 +93,7 @@ module AgentPipelineTests =
                 let dummyExecutor : ToolExecutor =
                     fun _ _ -> async { return "tool output" }
 
-                let initialState = createTestState [ ChatRequestSystemMessage("sys") :> ChatRequestMessage; ChatRequestUserMessage("test") :> ChatRequestMessage ]
+                let initialState = createTestState [ SystemMessage "sys"; UserMessage "test" ]
 
                 let! result = AgentPipeline.runTurnLoop dummyLlmCaller dummyExecutor [] Set.empty initialState
 

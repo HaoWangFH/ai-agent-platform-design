@@ -37,39 +37,41 @@ module AgentPipeline =
             Continue { state with ApiCalls = state.ApiCalls + 1 }
 
     /// Step 2.2: Prepare Messages Payload (shallow copy pipeline step)
-    let prepareApiMessages (msgs: ChatRequestMessage list) : ChatRequestMessage list =
+    let prepareApiMessages (msgs: AgentMessage list) : AgentMessage list =
         msgs |> List.map id
 
     /// Step 2.3: Context Window Protection (Pure Pipeline Transformation)
-    let compressContextIfNeeded (limit: int) (msgs: ChatRequestMessage list) : ChatRequestMessage list =
+    let compressContextIfNeeded (limit: int) (msgs: AgentMessage list) : AgentMessage list =
         if msgs.Length <= limit then
             msgs
         else
             printfn "  [Context Window Protection] History size (%d) > limit (%d). Trimming middle history..." msgs.Length limit
             let systemPrompt = msgs.Head
             let recentCount = limit - 3
-            let recentMessages = 
-                msgs 
+            let recentMessages =
+                msgs
                 |> List.skip (msgs.Length - recentCount)
-                |> List.skipWhile (function :? ChatRequestToolMessage -> true | _ -> false)
+                |> List.skipWhile (function | ToolMessage _ -> true | _ -> false)
 
-            let summaryMsg = ChatRequestSystemMessage(
-                sprintf "[System: Previous conversation history was trimmed to fit context window. %d earlier messages summarized.]" (msgs.Length - recentMessages.Length - 1)
-            )
-            systemPrompt :: (summaryMsg :> ChatRequestMessage) :: recentMessages
+            let summaryMsg =
+                SystemMessage (
+                    sprintf "[System: Previous conversation history was trimmed to fit context window. %d earlier messages summarized.]" (msgs.Length - recentMessages.Length - 1)
+                )
+
+            systemPrompt :: summaryMsg :: recentMessages
 
     /// Pipeline composition for message payload preparation
-    let preparePayload (limit: int) (msgs: ChatRequestMessage list) : ChatRequestMessage list =
-        msgs 
-        |> prepareApiMessages 
+    let preparePayload (limit: int) (msgs: AgentMessage list) : AgentMessage list =
+        msgs
+        |> prepareApiMessages
         |> compressContextIfNeeded limit
 
     /// Step 2.4: Execute API Call with Exponential Backoff Retry (Pure Async Recursion)
-    let rec callLlmWithRetry (llmCaller: LlmCaller) (schemas: FunctionDefinition list) (maxRetries: int) (retryCount: int) (msgs: ChatRequestMessage list) : Async<Result<ChatCompletions, string>> =
+    let rec callLlmWithRetry (llmCaller: LlmCaller) (schemas: FunctionDefinition list) (maxRetries: int) (retryCount: int) (msgs: AgentMessage list) : Async<Result<LlmTurnResponse, string>> =
         async {
             let! result = llmCaller schemas msgs
             match result with
-            | Ok completions -> return Ok completions
+            | Ok response -> return Ok response
             | Error err ->
                 printfn "  [API Error Retry %d/%d] %s" (retryCount + 1) maxRetries err
                 if retryCount >= maxRetries - 1 then
@@ -81,62 +83,53 @@ module AgentPipeline =
         }
 
     /// Step 2.6: Process Tool Calls (Self-Correction, JSON Validation & Execution)
-    let processToolCalls (executor: ToolExecutor) (registeredNamesSet: Set<string>) (content: string) (toolCalls: IEnumerable<ChatCompletionsToolCall>) (state: TurnState) : Async<TurnState> =
+    let processToolCalls (executor: ToolExecutor) (registeredNamesSet: Set<string>) (content: string) (toolCalls: ToolCall list) (state: TurnState) : Async<TurnState> =
         async {
-            let assistantMsg = ChatRequestAssistantMessage(content)
-
-            let! newToolMessages = 
+            let! newToolMessages =
                 toolCalls
-                |> Seq.choose (fun (tc: ChatCompletionsToolCall) ->
-                    match tc with
-                    | :? ChatCompletionsFunctionToolCall as fnCall -> Some fnCall
-                    | _ -> None)
-                |> Seq.map (fun fnCall ->
+                |> Seq.map (fun toolCall ->
                     async {
-                        assistantMsg.ToolCalls.Add(fnCall)
-                        let name = fnCall.Name
-                        let callId = fnCall.Id
-                        let argsStr = fnCall.Arguments
+                        let name = toolCall.Name
+                        let callId = toolCall.Id
+                        let argsStr = toolCall.ArgumentsJson
 
                         if not (registeredNamesSet.Contains(name)) then
                             let avail = registeredNamesSet |> String.concat ", "
                             let errStr = sprintf "Error: Tool '%s' is not registered. Available tools: %s" name avail
                             printfn "  [Tool Validation Error] %s" errStr
-                            return ChatRequestToolMessage(errStr, callId) :> ChatRequestMessage
+                            return ToolMessage(callId, errStr)
                         else
                             try
                                 use doc = JsonDocument.Parse(if String.IsNullOrEmpty argsStr then "{}" else argsStr)
                                 printfn "  [Tool Execution] %s(%s)" name argsStr
                                 let! execResult = executor name argsStr
                                 printfn "  [Tool Result] %s" execResult
-                                return ChatRequestToolMessage(execResult, callId) :> ChatRequestMessage
+                                return ToolMessage(callId, execResult)
                             with jsonEx ->
                                 let errStr = sprintf "Error: Invalid JSON arguments for tool '%s': %s" name jsonEx.Message
                                 printfn "  [JSON Parse Error] %s" errStr
-                                return ChatRequestToolMessage(errStr, callId) :> ChatRequestMessage
+                                return ToolMessage(callId, errStr)
                     })
                 |> Async.Parallel
 
-            let updatedHistory = 
-                state.Messages 
-                @ (assistantMsg :> ChatRequestMessage :: (newToolMessages |> Array.toList))
-
+            let assistantMsg = AssistantMessage(content, toolCalls)
+            let updatedHistory = state.Messages @ (assistantMsg :: (newToolMessages |> Array.toList))
             return { state with Messages = updatedHistory }
         }
 
     /// Step 2.7: Process Final Text Response with Empty Response Recovery
     let processTextResponse (rawContent: string) (state: TurnState) : StepResult<TurnState, TurnResult> =
         let finalText = if isNull rawContent then "" else rawContent.Trim()
-        
+
         if String.IsNullOrEmpty finalText then
             if state.EmptyContentRetries < 2 then
                 printfn "  [Empty Response Recovery] Retrying with prompt nudge..."
-                let updatedHistory = state.Messages @ [ ChatRequestUserMessage("Please provide a complete text response summarizing your answer.") :> ChatRequestMessage ]
+                let updatedHistory = state.Messages @ [ UserMessage "Please provide a complete text response summarizing your answer." ]
                 Continue { state with Messages = updatedHistory; EmptyContentRetries = state.EmptyContentRetries + 1 }
             else
                 let fallbackText = "(empty response)"
                 printfn "Assistant: %s" fallbackText
-                let updatedHistory = state.Messages @ [ ChatRequestAssistantMessage(fallbackText) :> ChatRequestMessage ]
+                let updatedHistory = state.Messages @ [ AssistantMessage(fallbackText, []) ]
                 Exit {
                     Outcome = TurnOutcome.Completed fallbackText
                     Messages = updatedHistory
@@ -144,7 +137,7 @@ module AgentPipeline =
                 }
         else
             printfn "Assistant: %s" finalText
-            let updatedHistory = state.Messages @ [ ChatRequestAssistantMessage(finalText) :> ChatRequestMessage ]
+            let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []) ]
             Exit {
                 Outcome = TurnOutcome.Completed finalText
                 Messages = updatedHistory
@@ -170,30 +163,27 @@ module AgentPipeline =
             let! apiResult = callLlmWithRetry llmCaller registeredSchemas stateAfterBudgetCheck.Config.MaxRetries 0 preparedPayload
 
             match apiResult with
+            | Error err when err = "No choices returned from LLM" ->
+                return {
+                    Outcome = TurnOutcome.Failed (ExitReason.NoResponse "No choices returned", Some err)
+                    Messages = stateAfterBudgetCheck.Messages
+                    ApiCalls = stateAfterBudgetCheck.ApiCalls
+                }
             | Error err ->
                 return {
                     Outcome = TurnOutcome.Failed (ExitReason.ApiError err, Some err)
                     Messages = stateAfterBudgetCheck.Messages
                     ApiCalls = stateAfterBudgetCheck.ApiCalls
                 }
-            | Ok completions when completions.Choices.Count = 0 ->
-                return {
-                    Outcome = TurnOutcome.Failed (ExitReason.NoResponse "No choices returned", Some "No choices returned from LLM")
-                    Messages = stateAfterBudgetCheck.Messages
-                    ApiCalls = stateAfterBudgetCheck.ApiCalls
-                }
-            | Ok completions ->
-                let choice = completions.Choices.[0]
-                let message = choice.Message
-
+            | Ok response ->
                 // Pipeline Step 2.6: Tool Call Execution Path
-                if not (isNull message.ToolCalls) && message.ToolCalls.Count > 0 then
-                    let! nextState = processToolCalls executor registeredNamesSet message.Content message.ToolCalls stateAfterBudgetCheck
+                if response.ToolCalls.Length > 0 then
+                    let! nextState = processToolCalls executor registeredNamesSet response.Content response.ToolCalls stateAfterBudgetCheck
                     return! runTurnLoop llmCaller executor registeredSchemas registeredNamesSet nextState
 
                 // Pipeline Step 2.7: Final Text Response Path
                 else
-                    match processTextResponse message.Content stateAfterBudgetCheck with
+                    match processTextResponse response.Content stateAfterBudgetCheck with
                     | Exit turnResult -> return turnResult
                     | Continue nextState -> return! runTurnLoop llmCaller executor registeredSchemas registeredNamesSet nextState
         }
@@ -214,29 +204,68 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
         | _ ->
             OpenAIClient(apiKey, options)
 
+    let toChatRequestMessage (msg: AgentMessage) : ChatRequestMessage =
+        match msg with
+        | SystemMessage content -> ChatRequestSystemMessage(content) :> ChatRequestMessage
+        | UserMessage content -> ChatRequestUserMessage(content) :> ChatRequestMessage
+        | AssistantMessage (content, toolCalls) ->
+            let assistant = ChatRequestAssistantMessage(content)
+            for toolCall in toolCalls do
+                assistant.ToolCalls.Add(ChatCompletionsFunctionToolCall(toolCall.Id, toolCall.Name, toolCall.ArgumentsJson))
+            assistant :> ChatRequestMessage
+        | ToolMessage (toolCallId, content) -> ChatRequestToolMessage(content, toolCallId) :> ChatRequestMessage
+
+    let toDomainResponse (responseMessage: ChatResponseMessage) : LlmTurnResponse =
+        let content = if isNull responseMessage.Content then "" else responseMessage.Content
+        let toolCalls =
+            if isNull responseMessage.ToolCalls then
+                []
+            else
+                responseMessage.ToolCalls
+                |> Seq.choose (fun tc ->
+                    match tc with
+                    | :? ChatCompletionsFunctionToolCall as fnCall ->
+                        Some {
+                            Id = fnCall.Id
+                            Name = fnCall.Name
+                            ArgumentsJson = fnCall.Arguments
+                        }
+                    | _ -> None)
+                |> Seq.toList
+
+        {
+            Content = content
+            ToolCalls = toolCalls
+        }
+
     // Standard default Azure.AI.OpenAI LLM caller implementation
     let defaultLlmCaller : LlmCaller =
         fun schemas msgs ->
             async {
-                let reqOptions = ChatCompletionsOptions(config.Model, msgs)
+                let requestMessages = msgs |> List.map toChatRequestMessage
+                let reqOptions = ChatCompletionsOptions(config.Model, requestMessages)
                 reqOptions.Temperature <- Nullable(0.7f)
                 for schema in schemas do
                     reqOptions.Tools.Add(ChatCompletionsFunctionToolDefinition(schema))
                 try
                     let! resp = client.GetChatCompletionsAsync(reqOptions) |> Async.AwaitTask
-                    return Ok resp.Value
+                    let completions = resp.Value
+                    if completions.Choices.Count = 0 then
+                        return Error "No choices returned from LLM"
+                    else
+                        return Ok (toDomainResponse completions.Choices.[0].Message)
                 with ex ->
                     return Error ex.Message
             }
 
-    let mutable canonicalMessages : ChatRequestMessage list = []
+    let mutable canonicalMessages : AgentMessage list = []
     let mutable interruptRequested = false
 
     do
         let systemPrompt =
             "You are a helpful AI assistant. You have access to various tools. " +
             "When asked to perform a task, use the tools to gather information and take actions before answering."
-        canonicalMessages <- [ ChatRequestSystemMessage(systemPrompt) :> ChatRequestMessage ]
+        canonicalMessages <- [ SystemMessage systemPrompt ]
 
     member _.RequestInterrupt() =
         interruptRequested <- true
@@ -246,7 +275,7 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
         async {
             // Phase 1: Turn Prologue
             printfn "\nUser: %s" userInput
-            canonicalMessages <- canonicalMessages @ [ ChatRequestUserMessage(userInput) :> ChatRequestMessage ]
+            canonicalMessages <- canonicalMessages @ [ UserMessage userInput ]
 
             let initialState : TurnState = {
                 Messages = canonicalMessages

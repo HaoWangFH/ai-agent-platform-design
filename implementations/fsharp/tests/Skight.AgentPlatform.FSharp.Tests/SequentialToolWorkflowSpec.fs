@@ -1,42 +1,9 @@
 namespace Skight.AgentPlatform.FSharp.Tests
 
-open System
-open Azure.AI.OpenAI
 open Expecto
 open Skight.AgentPlatform.FSharp
 
 module SequentialToolWorkflowSpec =
-
-    let private createToolCallCompletions (toolCallId: string) (toolName: string) (argumentsJson: string) =
-        let toolCall = ChatCompletionsFunctionToolCall(toolCallId, toolName, argumentsJson)
-        let responseMsg = AzureOpenAIModelFactory.ChatResponseMessage(ChatRole.Assistant, "", [ toolCall ])
-        let choice = AzureOpenAIModelFactory.ChatChoice(message = responseMsg, index = 0, finishReason = Nullable(CompletionsFinishReason.ToolCalls))
-        AzureOpenAIModelFactory.ChatCompletions(null, DateTimeOffset.UtcNow, [ choice ], null, null, null)
-
-    let private createTextCompletions (textResponse: string) =
-        let responseMsg = AzureOpenAIModelFactory.ChatResponseMessage(ChatRole.Assistant, textResponse, null)
-        let choice = AzureOpenAIModelFactory.ChatChoice(message = responseMsg, index = 0, finishReason = Nullable(CompletionsFinishReason.Stopped))
-        AzureOpenAIModelFactory.ChatCompletions(null, DateTimeOffset.UtcNow, [ choice ], null, null, null)
-
-    let private (|AssistantMessage|_|) (msg: ChatRequestMessage) =
-        match msg with
-        | :? ChatRequestAssistantMessage as assistant -> Some assistant
-        | _ -> None
-
-    let private (|ToolMessage|_|) (msg: ChatRequestMessage) =
-        match msg with
-        | :? ChatRequestToolMessage as tool -> Some tool
-        | _ -> None
-
-    let private (|FunctionToolCall|_|) (toolCall: ChatCompletionsToolCall) =
-        match toolCall with
-        | :? ChatCompletionsFunctionToolCall as fnCall -> Some fnCall
-        | _ -> None
-
-    let private tryGetFirstFunctionToolCallName (assistant: ChatRequestAssistantMessage) =
-        assistant.ToolCalls
-        |> Seq.tryHead
-        |> Option.bind (function | FunctionToolCall fnCall -> Some fnCall.Name | _ -> None)
 
     [<Tests>]
     let sequentialToolWorkflowTests =
@@ -49,9 +16,24 @@ module SequentialToolWorkflowSpec =
                     fun _ _ -> async {
                         incr callCounter
                         match !callCounter with
-                        | 1 -> return Ok (createToolCallCompletions "call_weather_123" "get_weather" "{\"location\":\"Tokyo\"}")
-                        | 2 -> return Ok (createToolCallCompletions "call_contact_456" "search_contacts" "{\"name\":\"Alice\"}")
-                        | 3 -> return Ok (createTextCompletions "Successfully retrieved Tokyo weather (25°C, Sunny) and emailed Alice (alice@example.com).")
+                        | 1 ->
+                            return
+                                Ok {
+                                    Content = ""
+                                    ToolCalls = [ { Id = "call_weather_123"; Name = "get_weather"; ArgumentsJson = "{\"location\":\"Tokyo\"}" } ]
+                                }
+                        | 2 ->
+                            return
+                                Ok {
+                                    Content = ""
+                                    ToolCalls = [ { Id = "call_contact_456"; Name = "search_contacts"; ArgumentsJson = "{\"name\":\"Alice\"}" } ]
+                                }
+                        | 3 ->
+                            return
+                                Ok {
+                                    Content = "Successfully retrieved Tokyo weather (25°C, Sunny) and emailed Alice (alice@example.com)."
+                                    ToolCalls = []
+                                }
                         | _ -> return Error "Unexpected LLM call beyond expected sequence"
                     }
 
@@ -67,8 +49,8 @@ module SequentialToolWorkflowSpec =
 
                 let initialState : TurnState = {
                     Messages = [
-                        ChatRequestSystemMessage("You are a helpful assistant.") :> ChatRequestMessage
-                        ChatRequestUserMessage("Find weather in Tokyo and notify Alice.") :> ChatRequestMessage
+                        SystemMessage "You are a helpful assistant."
+                        UserMessage "Find weather in Tokyo and notify Alice."
                     ]
                     ApiCalls = 0
                     EmptyContentRetries = 0
@@ -87,15 +69,15 @@ module SequentialToolWorkflowSpec =
                     failtestf "Expected completed outcome, got %A" outcome
 
                 match result.Messages.[2], result.Messages.[3], result.Messages.[4], result.Messages.[5], result.Messages.[6] with
-                | AssistantMessage asstMsg1, ToolMessage toolMsg1, AssistantMessage asstMsg2, ToolMessage toolMsg2, AssistantMessage asstMsg3 ->
+                | AssistantMessage (_, firstCalls), ToolMessage (firstCallId, firstResult), AssistantMessage (_, secondCalls), ToolMessage (secondCallId, secondResult), AssistantMessage (finalText, []) ->
                     let actual = {|
-                        FirstToolName = tryGetFirstFunctionToolCallName asstMsg1
-                        FirstToolResult = toolMsg1.Content
-                        FirstToolCallId = toolMsg1.ToolCallId
-                        SecondToolName = tryGetFirstFunctionToolCallName asstMsg2
-                        SecondToolResult = toolMsg2.Content
-                        SecondToolCallId = toolMsg2.ToolCallId
-                        FinalAssistantText = asstMsg3.Content
+                        FirstToolName = firstCalls |> List.tryHead |> Option.map (fun c -> c.Name)
+                        FirstToolResult = firstResult
+                        FirstToolCallId = firstCallId
+                        SecondToolName = secondCalls |> List.tryHead |> Option.map (fun c -> c.Name)
+                        SecondToolResult = secondResult
+                        SecondToolCallId = secondCallId
+                        FinalAssistantText = finalText
                     |}
 
                     let expected = {|
