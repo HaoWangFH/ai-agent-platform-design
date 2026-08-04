@@ -20,8 +20,10 @@ This document outlines the design, implementation plan, and analytical evaluatio
 - [ ] **2.1 Package Dependency**: Add `FSharp.Control.TaskSeq` package reference to `Skight.AgentPlatform.FSharp.fsproj`.
 - [ ] **2.2 Domain Types**: Add `StreamChunk` Discriminated Union (`TextDelta`, `ToolCallDelta`, `StreamCompleted`) to `Types.fs`.
 - [ ] **2.3 Anti-Corruption Layer (`SdkAdapter.fs`)**: Implement `streamLlmResponse` mapping `StreamingChatCompletionsUpdate` to `ITaskSeq<StreamChunk>`.
-- [ ] **2.4 Streaming Aggregator Logic**: Implement `TaskSeq.foldAsync` in `AgentPipeline.fs` to stitch streaming tool call argument fragments into `ToolCall` records.
-- [ ] **2.5 Program & Test Integration**: Add live streaming display output to `Program.fs` and create Expecto streaming specification tests.
+- [ ] **2.4 Stale Stream & Heartbeat Guard**: Implement 90s heartbeat reset and cancellation token monitoring in `SdkAdapter.fs`.
+- [ ] **2.5 Streaming Aggregator Logic**: Implement `TaskSeq.foldAsync` in `AgentPipeline.fs` to stitch streaming tool call argument fragments into `ToolCall` records using `Map<int, PartialToolCall>`.
+- [ ] **2.6 Partial Stream Salvage & Recovery**: Implement partial text buffering recovery on length truncation or stream drop.
+- [ ] **2.7 Program & Test Integration**: Add live streaming display output to `Program.fs` and create Expecto streaming specification tests.
 
 ---
 
@@ -100,7 +102,19 @@ let rec chatLoop (agent: Agent) (session: AgentSessionState) = async {
 - **ACL Isolation:** By wrapping SDK streams in `FSharp.Control.TaskSeq`, the delta-stitching complexity is isolated inside the **Anti-Corruption Layer (ACL)**, keeping `AgentPipeline.fs` clean.
 - **User Experience (UX):** Provides instant token-by-token output to the user.
 
-#### 2. Architectural Design & Signatures
+#### 2. Hermes Agent Streaming Architecture Analysis & Borrowed Patterns
+
+Based on deep-dive inspection of Hermes Agent's `_interruptible_streaming_api_call()` in `conversation_loop.py`, the F# implementation borrows five core architectural patterns:
+
+| Pattern | Hermes Agent (Python) | Borrowed F# Architectural Counterpart |
+|---|---|---|
+| **1. Dual-Consumer Architecture** | `stream_delta_callback` for live terminal render while building response object | High-order callback `onTextDelta: string -> unit` passed to `TaskSeq.foldAsync` |
+| **2. Stale Stream Guard** | 90s timeout check between consecutive chunk receipts | `CancellationTokenSource.CancelAfter(90000)` reset on chunk receipt in `taskSeq` |
+| **3. Mid-Flight Interrupt** | Break generator loop when `_interrupt_requested = True` | Check `cancellationToken.IsCancellationRequested` before yielding each chunk |
+| **4. Partial Stream Salvage** | Preserve `partial_response_text` on truncation or stream drop | Catch exception in `TaskSeq.foldAsync` and return `Error (PartialResponse)` for continuation prompt |
+| **5. Tool Call Delta Stitching** | Index-keyed accumulator `dict[index, tool_builder]` | Immutable `Map<int, PartialToolCall>` updated in `TaskSeq.foldAsync` |
+
+#### 3. Architectural Design & Signatures
 
 ##### A. Domain Stream Chunk DU (`Types.fs`)
 ```fsharp
@@ -114,6 +128,8 @@ type StreamChunk =
 ```fsharp
 namespace Skight.AgentPlatform.FSharp
 
+open System
+open System.Threading
 open FSharp.Control // FSharp.Control.TaskSeq
 open Azure.AI.OpenAI
 
@@ -125,14 +141,27 @@ module SdkAdapter =
         (config: AgentConfig) 
         (schemas: ToolSchema list) 
         (messages: AgentMessage list) 
+        (cancellationToken: CancellationToken)
         : ITaskSeq<StreamChunk> =
         taskSeq {
             let requestMessages = messages |> List.map toChatRequestMessage
             let reqOptions = ChatCompletionsOptions(config.Model, requestMessages)
             
-            let! response = client.GetChatCompletionsStreamingAsync(reqOptions)
+            // 90-second heartbeat guard borrowed from Hermes Agent
+            use cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+            cts.CancelAfter(90000)
+
+            let! response = client.GetChatCompletionsStreamingAsync(reqOptions, cts.Token)
             
             for choiceUpdate in response do
+                // Reset heartbeat guard on chunk arrival
+                cts.CancelAfter(90000)
+
+                // Check mid-flight cancellation (Hermes interrupt pattern)
+                if cancellationToken.IsCancellationRequested then
+                    yield StreamCompleted "interrupted_by_user"
+                    return ()
+
                 if not (isNull choiceUpdate.ContentUpdate) && choiceUpdate.ContentUpdate.Length > 0 then
                     yield TextDelta choiceUpdate.ContentUpdate
                     
@@ -144,31 +173,61 @@ module SdkAdapter =
         }
 ```
 
-##### C. Functional Stream Aggregator (`AgentPipeline.fs`)
+##### C. Functional Stream Aggregator with Index Stitching & Salvage (`AgentPipeline.fs`)
 ```fsharp
-/// Accumulates incoming stream chunks into a complete LlmTurnResponse
+type PartialToolCall = {
+    Id: ToolCallId option
+    Name: ToolName option
+    ArgsAcc: string
+}
+
+let updateToolCallAccumulator (index: int) (idOpt: ToolCallId option) (nameOpt: ToolName option) (argsDelta: string) (map: Map<int, PartialToolCall>) =
+    let current = 
+        map 
+        |> Map.tryFind index 
+        |> Option.defaultValue { Id = None; Name = None; ArgsAcc = "" }
+
+    let updated = {
+        Id = idOpt |> Option.orElse current.Id
+        Name = nameOpt |> Option.orElse current.Name
+        ArgsAcc = current.ArgsAcc + argsDelta
+    }
+    map |> Map.add index updated
+
+/// Accumulates incoming stream chunks into a complete LlmTurnResponse with partial text salvage
 let aggregateStream (stream: ITaskSeq<StreamChunk>) (onTextChunk: string -> unit) : Async<LlmTurnResponse> =
     async {
-        let! (textBuffer, toolCallMap) =
-            stream
-            |> TaskSeq.foldAsync (fun (textAcc, toolMap) chunk ->
-                async {
-                    match chunk with
-                    | TextDelta text ->
-                        onTextChunk text // Live UI callback
-                        return (textAcc + text, toolMap)
-                    | ToolCallDelta (idx, idOpt, nameOpt, argsFragment) ->
-                        let updatedMap = updateToolCallAccumulator idx idOpt nameOpt argsFragment toolMap
-                        return (textAcc, updatedMap)
-                    | StreamCompleted _ ->
-                        return (textAcc, toolMap)
-                }
-            ) ("", Map.empty)
+        let textBuffer = ref ""
+        try
+            let! (finalText, toolCallMap) =
+                stream
+                |> TaskSeq.foldAsync (fun (textAcc, toolMap) chunk ->
+                    async {
+                        match chunk with
+                        | TextDelta text ->
+                            onTextChunk text // Consumer 1: Live UI rendering (Hermes stream_delta_callback)
+                            textBuffer := textAcc + text
+                            return (!textBuffer, toolMap)
+                        | ToolCallDelta (idx, idOpt, nameOpt, argsFragment) ->
+                            let updatedMap = updateToolCallAccumulator idx idOpt nameOpt argsFragment toolMap
+                            return (textAcc, updatedMap)
+                        | StreamCompleted _ ->
+                            return (textAcc, toolMap)
+                    }
+                ) ("", Map.empty)
 
-        return {
-            Content = textBuffer
-            ToolCalls = toolCallMap |> Map.toList |> List.map snd
-        }
+            let completedToolCalls =
+                toolCallMap
+                |> Map.toList
+                |> List.choose (fun (_, partial) ->
+                    match partial.Id, partial.Name with
+                    | Some id, Some name -> Some { Id = id; Name = name; ArgumentsJson = partial.ArgsAcc }
+                    | _ -> None)
+
+            return { Content = finalText; ToolCalls = completedToolCalls }
+        with ex ->
+            // Hermes Pattern 4: Salvage partial text for continuation on stream drop
+            return { Content = !textBuffer; ToolCalls = [] }
     }
 ```
 
@@ -178,5 +237,5 @@ let aggregateStream (stream: ITaskSeq<StreamChunk>) (onTextChunk: string -> unit
 
 1. **Zero `mutable` Instance State:** Core agent logic and turn runner operate without any `mutable` fields.
 2. **Deterministic State Threading:** `runTurnAsync` returns `(TurnResult * AgentSessionState)`, verified by Expecto unit tests.
-3. **TaskSeq Live Streaming:** `TaskSeq` streams tokens to the console in `Program.fs` and accumulates tool call argument deltas correctly.
+3. **Hermes Parity TaskSeq Streaming:** `TaskSeq` streams tokens to the console in `Program.fs`, enforces 90s heartbeat timeouts, supports mid-flight cancellation, and accumulates tool call argument deltas correctly across chunk indexes.
 4. **Build & Test Success:** `dotnet test implementations/fsharp/Skight.AgentPlatform.FSharp.sln` passes 100%.

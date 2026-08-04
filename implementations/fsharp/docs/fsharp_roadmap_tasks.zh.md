@@ -20,8 +20,10 @@
 - [ ] **2.1 包依赖添加**：在 `Skight.AgentPlatform.FSharp.fsproj` 中添加 `FSharp.Control.TaskSeq` 包引用。
 - [ ] **2.2 领域类型扩展**：在 `Types.fs` 中添加 `StreamChunk` 可区分联合（`TextDelta`、`ToolCallDelta`、`StreamCompleted`）。
 - [ ] **2.3 防腐层实现 (`SdkAdapter.fs`)**：实现将 `StreamingChatCompletionsUpdate` 映射为 `ITaskSeq<StreamChunk>` 的 `streamLlmResponse`。
-- [ ] **2.4 流式聚合逻辑**：在 `AgentPipeline.fs` 中利用 `TaskSeq.foldAsync` 拼接分片到达的工具调用参数片段。
-- [ ] **2.5 程序与测试集成**：在 `Program.fs` 中增加实时流式输出，并编写 Expecto 流式规范测试。
+- [ ] **2.4 僵死流与心跳保护**：在 `SdkAdapter.fs` 中实现 90 秒心跳重置与取消令牌监控（借鉴 Hermes 模式）。
+- [ ] **2.5 流式聚合与索引拼接**：在 `AgentPipeline.fs` 中利用 `TaskSeq.foldAsync` 配合 `Map<int, PartialToolCall>` 拼接按索引分片到达的工具调用参数片段。
+- [ ] **2.6 残存流拯救与恢复 (Partial Stream Salvage)**：实现网络中断或长度截断时的已流式文本抢救与恢复提示机制。
+- [ ] **2.7 程序与测试集成**：在 `Program.fs` 中增加实时流式输出，并编写 Expecto 流式规范测试。
 
 ---
 
@@ -100,7 +102,19 @@ let rec chatLoop (agent: Agent) (session: AgentSessionState) = async {
 - **防腐层隔离：** 通过将 SDK 流封装在 `FSharp.Control.TaskSeq` 中，分片拼接复杂性被隔离在**防腐层 (ACL)** 内部，保持 `AgentPipeline.fs` 的干净整洁。
 - **用户体验 (UX)：** 为用户提供即时的逐 Token 实时打字机输出。
 
-#### 2. 架构设计与函数签名
+#### 2. Hermes Agent 流式架构深度分析与 5 大借鉴模式
+
+通过对 Hermes Agent 源码中 `_interruptible_streaming_api_call()` 的深入分析，F# 实现借鉴了 5 个核心架构模式：
+
+| 模式 (Pattern) | Hermes Agent (Python) | F# 架构借鉴实现 (Borrowed Counterpart) |
+|---|---|---|
+| **1. 双消费者架构 (Dual-Consumer)** | `stream_delta_callback` 用于终端实时渲染，同时累加响应对象 | 高阶函数 `onTextDelta: string -> unit` 传入 `TaskSeq.foldAsync` |
+| **2. 僵死流心跳保护 (Stale Guard)** | 连续数据包之间 90 秒超时检查 | `taskSeq` 内部接收数据包时重置 `CancellationTokenSource.CancelAfter(90000)` |
+| **3. 中途打断 (Mid-Flight Interrupt)** | 当 `_interrupt_requested = True` 时打断生成器循环 | 在 `taskSeq` 每次 yield 前检查 `cancellationToken.IsCancellationRequested` |
+| **4. 残存流抢救 (Partial Salvage)** | 截断或断连时保留 `partial_response_text` 用于后续续写 | 捕获 `TaskSeq.foldAsync` 异常并返回 `Error (PartialResponse)` 用于续写提示 |
+| **5. 工具调用索引拼接 (Index Stitching)** | 按索引键控的累加器 `dict[index, tool_builder]` | `TaskSeq.foldAsync` 中更新不可变 `Map<int, PartialToolCall>` |
+
+#### 3. 架构设计与函数签名
 
 ##### A. 领域流数据块 DU (`Types.fs`)
 ```fsharp
@@ -114,6 +128,8 @@ type StreamChunk =
 ```fsharp
 namespace Skight.AgentPlatform.FSharp
 
+open System
+open System.Threading
 open FSharp.Control // FSharp.Control.TaskSeq
 open Azure.AI.OpenAI
 
@@ -125,14 +141,27 @@ module SdkAdapter =
         (config: AgentConfig) 
         (schemas: ToolSchema list) 
         (messages: AgentMessage list) 
+        (cancellationToken: CancellationToken)
         : ITaskSeq<StreamChunk> =
         taskSeq {
             let requestMessages = messages |> List.map toChatRequestMessage
             let reqOptions = ChatCompletionsOptions(config.Model, requestMessages)
             
-            let! response = client.GetChatCompletionsStreamingAsync(reqOptions)
+            // 借鉴自 Hermes Agent 的 90 秒心跳超时保护
+            use cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+            cts.CancelAfter(90000)
+
+            let! response = client.GetChatCompletionsStreamingAsync(reqOptions, cts.Token)
             
             for choiceUpdate in response do
+                // 每次收到数据包时重置心跳定时器
+                cts.CancelAfter(90000)
+
+                // 检查中途打断标志 (Hermes 打断模式)
+                if cancellationToken.IsCancellationRequested then
+                    yield StreamCompleted "interrupted_by_user"
+                    return ()
+
                 if not (isNull choiceUpdate.ContentUpdate) && choiceUpdate.ContentUpdate.Length > 0 then
                     yield TextDelta choiceUpdate.ContentUpdate
                     
@@ -144,31 +173,61 @@ module SdkAdapter =
         }
 ```
 
-##### C. 函数式流聚合器 (`AgentPipeline.fs`)
+##### C. 带有索引拼接与残存流抢救的函数式流聚合器 (`AgentPipeline.fs`)
 ```fsharp
-/// 将传入的流数据块累加合并为完整的 LlmTurnResponse
+type PartialToolCall = {
+    Id: ToolCallId option
+    Name: ToolName option
+    ArgsAcc: string
+}
+
+let updateToolCallAccumulator (index: int) (idOpt: ToolCallId option) (nameOpt: ToolName option) (argsDelta: string) (map: Map<int, PartialToolCall>) =
+    let current = 
+        map 
+        |> Map.tryFind index 
+        |> Option.defaultValue { Id = None; Name = None; ArgsAcc = "" }
+
+    let updated = {
+        Id = idOpt |> Option.orElse current.Id
+        Name = nameOpt |> Option.orElse current.Name
+        ArgsAcc = current.ArgsAcc + argsDelta
+    }
+    map |> Map.add index updated
+
+/// 将传入的流数据块累加合并为完整的 LlmTurnResponse（带残存文本抢救）
 let aggregateStream (stream: ITaskSeq<StreamChunk>) (onTextChunk: string -> unit) : Async<LlmTurnResponse> =
     async {
-        let! (textBuffer, toolCallMap) =
-            stream
-            |> TaskSeq.foldAsync (fun (textAcc, toolMap) chunk ->
-                async {
-                    match chunk with
-                    | TextDelta text ->
-                        onTextChunk text // 实时 UI 回调
-                        return (textAcc + text, toolMap)
-                    | ToolCallDelta (idx, idOpt, nameOpt, argsFragment) ->
-                        let updatedMap = updateToolCallAccumulator idx idOpt nameOpt argsFragment toolMap
-                        return (textAcc, updatedMap)
-                    | StreamCompleted _ ->
-                        return (textAcc, toolMap)
-                }
-            ) ("", Map.empty)
+        let textBuffer = ref ""
+        try
+            let! (finalText, toolCallMap) =
+                stream
+                |> TaskSeq.foldAsync (fun (textAcc, toolMap) chunk ->
+                    async {
+                        match chunk with
+                        | TextDelta text ->
+                            onTextChunk text // 消费者 1：实时 UI 打字机渲染 (Hermes stream_delta_callback)
+                            textBuffer := textAcc + text
+                            return (!textBuffer, toolMap)
+                        | ToolCallDelta (idx, idOpt, nameOpt, argsFragment) ->
+                            let updatedMap = updateToolCallAccumulator idx idOpt nameOpt argsFragment toolMap
+                            return (textAcc, updatedMap)
+                        | StreamCompleted _ ->
+                            return (textAcc, toolMap)
+                    }
+                ) ("", Map.empty)
 
-        return {
-            Content = textBuffer
-            ToolCalls = toolCallMap |> Map.toList |> List.map snd
-        }
+            let completedToolCalls =
+                toolCallMap
+                |> Map.toList
+                |> List.choose (fun (_, partial) ->
+                    match partial.Id, partial.Name with
+                    | Some id, Some name -> Some { Id = id; Name = name; ArgumentsJson = partial.ArgsAcc }
+                    | _ -> None)
+
+            return { Content = finalText; ToolCalls = completedToolCalls }
+        with ex ->
+            // Hermes 模式 4：流异常中断时抢救已流式传输的文本用于后续续写
+            return { Content = !textBuffer; ToolCalls = [] }
     }
 ```
 
@@ -178,5 +237,5 @@ let aggregateStream (stream: ITaskSeq<StreamChunk>) (onTextChunk: string -> unit
 
 1. **零 `mutable` 实例状态：** 核心 Agent 逻辑与回合运行器在没有任何 `mutable` 字段的情况下运行。
 2. **确定性状态传递：** `runTurnAsync` 返回 `(TurnResult * AgentSessionState)`，经由 Expecto 单元测试验证。
-3. **TaskSeq 实时流式传输：** `TaskSeq` 在 `Program.fs` 中向控制台实时流式输出 Token，并准确累加工具调用参数增量。
+3. **Hermes 对齐 TaskSeq 实时流式传输：** `TaskSeq` 在 `Program.fs` 中向控制台实时流式输出 Token，强制实施 90 秒心跳超时，支持中途取消，并跨块索引准确累加工具调用参数增量。
 4. **构建与测试通过：** `dotnet test implementations/fsharp/Skight.AgentPlatform.FSharp.sln` 100% 通过。
