@@ -11,16 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Skight.AgentPlatform.FSharp.Tests", "tests\Skight.AgentPlatform.FSharp.Tests\Skight.AgentPlatform.FSharp.Tests.fsproj", "{5B4E9AFD-3C76-44A3-B42E-4B46C2096DEE}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AI-EOS-Docs", "AI-EOS-Docs", "{E0F61906-BA55-4EB9-8137-7D3C77D6FA5A}"
-	ProjectSection(SolutionItems) = preProject
-		..\..\07-Architecture\fsharp\fsharp_refactoring_report.md = ..\..\07-Architecture\fsharp\fsharp_refactoring_report.md
-		..\..\07-Architecture\fsharp\fsharp_roadmap_tasks.md = ..\..\07-Architecture\fsharp\fsharp_roadmap_tasks.md
-		..\..\07-Architecture\fsharp\fsharp_tools_and_mcp_tasks.md = ..\..\07-Architecture\fsharp\fsharp_tools_and_mcp_tasks.md
-		..\..\08-Specification-Driven-Development\AGENT_LOOP_BDD_SPECS.md = ..\..\08-Specification-Driven-Development\AGENT_LOOP_BDD_SPECS.md
-		..\..\.agyrules = ..\..\.agyrules
-		..\..\.github\copilot-instructions.md = ..\..\.github\copilot-instructions.md
-	EndProjectSection
-EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
