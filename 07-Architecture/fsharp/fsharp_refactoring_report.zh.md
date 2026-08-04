@@ -79,11 +79,11 @@ let (|FunctionToolCall|_|) (tc: ChatCompletionsToolCall) =
 | 1 | 让非法状态不可表示 (Make Illegal States Unrepresentable) | ✅ 完全对齐 | **A** |
 | 2 | 解析而非验证 (Parse, Don't Validate / Smart Constructors) | ✅ 完全对齐 | **A** |
 | 3 | 构建防腐层隔离 OO SDK (Anti-Corruption Layer) | ✅ 完全对齐 | **A** |
-| 4 | 纯函数与只追加历史 (Pure Functions & Append-Only History) | ⚠️ 部分对齐 | **B** |
+| 4 | 纯函数与只追加历史 (Pure Functions & Append-Only History) | ✅ 完全对齐 | **A** |
 | 5 | 函数式流式处理 (TaskSeq Functional Streaming) | 🔘 不适用 | **—** |
 | 6 | 函数式测试实践 (Functional Testing Practices) | ✅ 完全对齐 | **A** |
 
-**综合评分：A-** — 整体高度符合函数式范式，存在少量细节可继续优化。
+**综合评分：A** — 当前已实现范围内与函数式架构规范整体高度对齐。
 
 ### 5.1 让非法状态不可表示 — 评分 A
 
@@ -119,15 +119,15 @@ type TurnOutcome =
 
 **未来优化方向：** 目前 ACL 函数作为 `Agent` 类的私有成员存在。可考虑提炼为顶层模块 `module SdkAdapter`，使边界更加显式且可独立单元测试。
 
-### 5.4 纯函数与只追加历史 — 评分 B
+### 5.4 纯函数与只追加历史 — 评分 A
 
-**优势：**
-*   `AgentPipeline` 模块完全由操作不可变 `TurnState` 的纯函数组成，每个步骤均返回新状态，绝不进行原地修改。
-*   `AgentSession` 模块将会话状态迁移建模为纯函数：`beginTurn`、`applyTurnResult`、`requestInterrupt` 均返回新状态。
+**当前状态：**
+*   `AgentPipeline` 仍保持为对不可变 `TurnState` 的纯函数式循环。
+*   `AgentSession` 模块承载纯状态迁移（`initialize`、`beginTurn`、`applyTurnResult`、`requestInterrupt`）。
+*   `AgentRunner.runTurnAsync` 已成为标准纯入口，返回 `Async<TurnResult * AgentSessionState>`。
+*   `Program.fs` 通过递归循环显式传递 `AgentSessionState`。
 
-**改进空间：** 最外层的 `Agent` 类包装器中仍包含 `mutable sessionState`（第 288 行），并在 `RunAsync` 中对其进行了赋值修改（第 300、311 行）。虽然该可变修改被严格限定在 I/O 外壳层，纯 `AgentPipeline` 模块并未受到影响，但从纯函数式角度看，仍有提升空间。
-
-**优化方案：** 让 `RunAsync` 返回 `TurnResult * AgentSessionState`，由 `Program.fs` 负责会话状态的传递与持有。
+`Agent.fs` 中原有的可变包装路径（依赖内部可变状态的 `RunAsync` / `RequestInterrupt`）已下线，整体迁移为显式状态线程。
 
 ### 5.5 函数式流式处理 (TaskSeq) — 不适用
 
@@ -164,7 +164,6 @@ match result.Messages.[2], result.Messages.[3], ... with
 |----------|------|------|--------|
 | 低 | 将 ACL 函数提取为 `module SdkAdapter` | `Agent.fs` | 较小 |
 | 低 | 为 `AgentConfig.Model` 增加 `ModelId` 智能构造函数 | `Types.fs` | 微小 |
-| 中 | `RunAsync` 返回 `TurnResult * AgentSessionState` 以消除 `Agent` 类中的 `mutable sessionState` | `Agent.fs` | 中等 |
 
 ## 结论
-通过利用 F# 类型系统在编译时阻止无效的逻辑路径，Agent 平台的 F# 实现现在明显更安全。通过将验证推至应用程序边缘 (防腐层 ACL 和智能构造函数)，内部纯函数可以毫无防御性编程开销地运行。规范对齐审查证实代码库与各项函数式架构准则高度符合 (A-)，仅存少量细节优化项。
+通过利用 F# 类型系统在编译时阻止无效的逻辑路径，Agent 平台的 F# 实现现在明显更安全。通过将验证推至应用程序边缘（防腐层 ACL 和智能构造函数），内部纯函数可以毫无防御性编程开销地运行。随着端到端显式会话状态线程化的完成，规范对齐审查证实代码库与各项函数式架构准则高度符合（A），仅存少量细节优化项。

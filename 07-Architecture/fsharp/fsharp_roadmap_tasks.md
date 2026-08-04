@@ -10,11 +10,16 @@ This document outlines the design, implementation plan, and analytical evaluatio
 ## 📋 Task Master Checklist
 
 ### Task 1: Pure Functional `RunAsync` Architecture
-- [ ] **1.1 Types & Domain Refactoring**: Verify `AgentSessionState` and `TurnResult` pure state signatures in `Types.fs`.
-- [ ] **1.2 Create `AgentRunner.fs` Module**: Implement pure `runTurnAsync` function returning `Async<TurnResult * AgentSessionState>`.
-- [ ] **1.3 Refactor `Agent.fs`**: Deprecate `mutable sessionState` inside the `Agent` class wrapper or provide pure static entry points.
-- [ ] **1.4 Application Shell Integration (`Program.fs`)**: Update the REPL interactive loop to thread `AgentSessionState` explicitly across recursive turns.
-- [ ] **1.5 Unit & Spec Test Migration**: Update Expecto test suites (`AgentPipelineTests.fs`, `SequentialToolWorkflowSpec.fs`) to assert against pure `(result, updatedSession)` tuples.
+- [x] **1.1 Types & Domain Refactoring**: Verified `AgentSessionState` and `TurnResult` pure state signatures in `Types.fs`.
+- [x] **1.2 Create `AgentRunner.fs` Module**: Implemented pure `runTurnAsync` returning `Async<TurnResult * AgentSessionState>`.
+- [x] **1.3 Refactor `Agent.fs`**: Decommissioned mutable wrapper path (`RunAsync`/`RequestInterrupt`) and exposed pure-state APIs (`CreateInitialSession`, `RunPureAsync`).
+- [x] **1.4 Application Shell Integration (`Program.fs`)**: Updated REPL loop to thread `AgentSessionState` explicitly across recursive turns.
+- [x] **1.5 Unit & Spec Test Migration**: Updated Expecto suites (`AgentPipelineTests.fs`, `SequentialToolWorkflowSpec.fs`) to validate pure `(result, updatedSession)` flow via `AgentRunner.runTurnAsync`.
+
+**Task 1 Implementation Status:** ✅ Completed (build green, tests passing)
+- Core files: `Types.fs`, `AgentSession.fs`, `AgentPipeline.fs`, `AgentRunner.fs`, `Agent.fs`, `Program.fs`
+- Key runtime shape: `runTurnAsync : ... -> Async<TurnResult * AgentSessionState>`
+- Stateful wrapper path in `Agent.fs` removed in favor of explicit session threading.
 
 ### Task 2: `TaskSeq` LLM Streaming Adapter
 - [ ] **2.1 Package Dependency**: Add `FSharp.Control.TaskSeq` package reference to `Skight.AgentPlatform.FSharp.fsproj`.
@@ -52,23 +57,25 @@ namespace Skight.AgentPlatform.FSharp
 module AgentRunner =
 
     /// Pure functional entry point: (State, Input) -> Async<TurnResult * NewSessionState>
-    let runTurnAsync 
-        (llmCaller: LlmCaller) 
-        (executor: ToolExecutor) 
-        (config: AgentConfig) 
-        (userInput: string) 
-        (sessionState: AgentSessionState) 
+    let runTurnAsync
+        (llmCaller: LlmCaller)
+        (executor: ToolExecutor)
+        (config: AgentConfig)
+        (userInput: string)
+        (sessionState: AgentSessionState)
+        (registeredSchemas: ToolSchema list)
+        (registeredNamesSet: Set<ToolName>)
         : Async<TurnResult * AgentSessionState> =
         async {
             // 1. Pure prologue transition
             let turnState, nextSessionState = AgentSession.beginTurn config userInput sessionState
-            
+
             // 2. Pure tail-recursive 4-phase loop execution
-            let! result = AgentPipeline.runTurnLoop llmCaller executor schemas nameSet turnState
-            
+            let! result = AgentPipeline.runTurnLoop llmCaller executor registeredSchemas registeredNamesSet turnState
+
             // 3. Pure finalization transition
             let finalSessionState = AgentSession.applyTurnResult result nextSessionState
-            
+
             return result, finalSessionState
         }
 ```

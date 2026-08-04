@@ -79,11 +79,11 @@ A systematic review was conducted against the [F# Functional Programming Guideli
 | 1 | Make Illegal States Unrepresentable | ✅ Aligned | **A** |
 | 2 | Parse, Don't Validate (Smart Constructors) | ✅ Aligned | **A** |
 | 3 | Anti-Corruption Layer (Isolate OO SDKs) | ✅ Aligned | **A** |
-| 4 | Pure Functions & Append-Only History | ⚠️ Partial | **B** |
+| 4 | Pure Functions & Append-Only History | ✅ Aligned | **A** |
 | 5 | Functional Streaming (TaskSeq) | 🔘 N/A | **—** |
 | 6 | Functional Testing Practices | ✅ Aligned | **A** |
 
-**Overall Grade: A-** — strong alignment with minor improvements identified.
+**Overall Grade: A** — strong alignment across all currently implemented architectural rules.
 
 ### 5.1 Make Illegal States Unrepresentable — Grade A
 
@@ -119,15 +119,15 @@ The core `AgentPipeline` module operates exclusively on `AgentMessage`, `TurnSta
 
 **Minor future improvement:** The ACL functions are currently private members of the `Agent` class. Consider extracting them into a top-level `module SdkAdapter` to make the boundary more explicit and independently testable.
 
-### 5.4 Pure Functions & Append-Only History — Grade B
+### 5.4 Pure Functions & Append-Only History — Grade A
 
-**Strengths:**
-*   The `AgentPipeline` module is a collection of pure functions operating on immutable `TurnState`. Every step returns a new state — never mutates.
-*   The `AgentSession` module models session transitions as pure functions: `beginTurn`, `applyTurnResult`, `requestInterrupt` — all return new state.
+**Current State:**
+*   `AgentPipeline` remains a pure, immutable transformation loop over `TurnState`.
+*   `AgentSession` owns pure state transitions (`initialize`, `beginTurn`, `applyTurnResult`, `requestInterrupt`).
+*   `AgentRunner.runTurnAsync` is now the canonical pure orchestration entry, returning `Async<TurnResult * AgentSessionState>`.
+*   `Program.fs` explicitly threads `AgentSessionState` across recursive turns.
 
-**Gap:** The `Agent` class wrapper uses `mutable sessionState` (line 288) and mutates it in `RunAsync` (lines 300, 311). This mutation is confined to the I/O shell — the pure `AgentPipeline` module doesn't touch it — so it's architecturally acceptable but not fully functional end-to-end.
-
-**Potential improvement:** Return `TurnResult * AgentSessionState` from `RunAsync` and let `Program.fs` own the state threading.
+The previous mutable wrapper path in `Agent.fs` (`RunAsync`/`RequestInterrupt` with internal mutable session state) has been decommissioned in favor of explicit state threading.
 
 ### 5.5 Functional Streaming (TaskSeq) — N/A
 
@@ -164,7 +164,6 @@ match result.Messages.[2], result.Messages.[3], ... with
 |----------|------|------|--------|
 | Low | Extract ACL functions into `module SdkAdapter` | `Agent.fs` | Small |
 | Low | Add `ModelId` smart constructor for `AgentConfig.Model` | `Types.fs` | Trivial |
-| Medium | Return `TurnResult * AgentSessionState` from `RunAsync` to eliminate `mutable sessionState` | `Agent.fs` | Medium |
 
 ## Conclusion
-The agent platform's F# implementation is now demonstrably safer, leveraging the F# type system to block invalid logic paths at compile time. By pushing validation to the edges of the application (the ACL and Smart Constructors), the internal pure functions can operate without defensive programming overhead. The guideline compliance review confirms strong alignment (A-) across all applicable architectural rules, with only minor polish items remaining.
+The agent platform's F# implementation is now demonstrably safer, leveraging the F# type system to block invalid logic paths at compile time. By pushing validation to the edges of the application (the ACL and Smart Constructors), the internal pure functions can operate without defensive programming overhead. With explicit session-state threading now implemented end-to-end, the guideline compliance review confirms strong alignment (A) across all applicable architectural rules, with only minor polish items remaining.

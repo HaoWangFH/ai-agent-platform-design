@@ -10,11 +10,16 @@
 ## 📋 任务主清单 (Task Master Checklist)
 
 ### 任务 1：纯函数式 `RunAsync` 架构 (Pure Functional RunAsync)
-- [ ] **1.1 类型与领域层重构**：核论 `Types.fs` 中 `AgentSessionState` 与 `TurnResult` 的纯状态签名。
-- [ ] **1.2 创建 `AgentRunner.fs` 模块**：实现返回 `Async<TurnResult * AgentSessionState>` 的纯 `runTurnAsync` 函数。
-- [ ] **1.3 重构 `Agent.fs`**：废弃 `Agent` 类包装器内部的 `mutable sessionState` 或提供纯静态入口。
-- [ ] **1.4 应用外壳层集成 (`Program.fs`)**：更新 REPL 交互循环，使其在递归回合间显式传递 `AgentSessionState`。
-- [ ] **1.5 单元与规范测试迁移**：更新 Expecto 测试套件（`AgentPipelineTests.fs`、`SequentialToolWorkflowSpec.fs`），对纯 `(result, updatedSession)` 元组进行断言。
+- [x] **1.1 类型与领域层重构**：已完成 `Types.fs` 中 `AgentSessionState` 与 `TurnResult` 的纯状态签名核验。
+- [x] **1.2 创建 `AgentRunner.fs` 模块**：已实现返回 `Async<TurnResult * AgentSessionState>` 的纯 `runTurnAsync` 函数。
+- [x] **1.3 重构 `Agent.fs`**：已下线可变包装路径（`RunAsync`/`RequestInterrupt`），并暴露纯状态入口（`CreateInitialSession`、`RunPureAsync`）。
+- [x] **1.4 应用外壳层集成 (`Program.fs`)**：已更新 REPL 交互循环，在递归回合间显式传递 `AgentSessionState`。
+- [x] **1.5 单元与规范测试迁移**：已更新 Expecto 测试套件（`AgentPipelineTests.fs`、`SequentialToolWorkflowSpec.fs`），通过 `AgentRunner.runTurnAsync` 验证纯 `(result, updatedSession)` 流程。
+
+**任务 1 实施状态：** ✅ 已完成（构建通过，测试通过）
+- 核心文件：`Types.fs`、`AgentSession.fs`、`AgentPipeline.fs`、`AgentRunner.fs`、`Agent.fs`、`Program.fs`
+- 关键运行签名：`runTurnAsync : ... -> Async<TurnResult * AgentSessionState>`
+- `Agent.fs` 中原可变状态包装路径已由显式会话状态传递替代。
 
 ### 任务 2：`TaskSeq` LLM 流式适配器 (TaskSeq Streaming)
 - [ ] **2.1 包依赖添加**：在 `Skight.AgentPlatform.FSharp.fsproj` 中添加 `FSharp.Control.TaskSeq` 包引用。
@@ -52,23 +57,25 @@ namespace Skight.AgentPlatform.FSharp
 module AgentRunner =
 
     /// 纯函数式入口：(State, Input) -> Async<TurnResult * NewSessionState>
-    let runTurnAsync 
-        (llmCaller: LlmCaller) 
-        (executor: ToolExecutor) 
-        (config: AgentConfig) 
-        (userInput: string) 
-        (sessionState: AgentSessionState) 
+    let runTurnAsync
+        (llmCaller: LlmCaller)
+        (executor: ToolExecutor)
+        (config: AgentConfig)
+        (userInput: string)
+        (sessionState: AgentSessionState)
+        (registeredSchemas: ToolSchema list)
+        (registeredNamesSet: Set<ToolName>)
         : Async<TurnResult * AgentSessionState> =
         async {
             // 1. 纯回合前言迁移
             let turnState, nextSessionState = AgentSession.beginTurn config userInput sessionState
-            
+
             // 2. 纯尾递归 4 阶段循环执行
-            let! result = AgentPipeline.runTurnLoop llmCaller executor schemas nameSet turnState
-            
+            let! result = AgentPipeline.runTurnLoop llmCaller executor registeredSchemas registeredNamesSet turnState
+
             // 3. 纯回合终结迁移
             let finalSessionState = AgentSession.applyTurnResult result nextSessionState
-            
+
             return result, finalSessionState
         }
 ```
