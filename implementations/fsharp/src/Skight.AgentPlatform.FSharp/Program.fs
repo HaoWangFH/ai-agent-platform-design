@@ -141,22 +141,31 @@ module Program =
         }
 
         let agent = Agent(effectiveKey, registry, config, ?endpoint=endpoint, ?jwtToken=jwtToken)
+        let llmCaller = agent.DefaultLlmCaller
+        let executor = registry.AsExecutor
+        let registeredSchemas = registry.GetToolSchemas()
+        let registeredNamesSet = registry.GetRegisteredNames() |> Set.ofList
 
         printfn "Agent is ready. Type 'exit' or 'quit' to stop."
-
-        let mutable running = true
-        while running do
+        
+        let systemPrompt =
+            "You are a helpful AI assistant. You have access to various tools. " +
+            "When asked to perform a task, use the tools to gather information and take actions before answering."
+        
+        let rec loop session =
             printf "> "
             let input = Console.ReadLine()
-            if isNull input then
-                running <- false
+            if isNull input then 0
             else
                 let trimmed = input.Trim()
-                if trimmed.ToLower() = "exit" || trimmed.ToLower() = "quit" then
-                    running <- false
-                elif not (String.IsNullOrEmpty trimmed) then
+                if trimmed.ToLower() = "exit" || trimmed.ToLower() = "quit" then 0
+                elif String.IsNullOrEmpty trimmed then loop session
+                else
                     try
-                        let result = agent.RunAsync(trimmed) |> Async.RunSynchronously
+                        let result, nextSession = 
+                            AgentRunner.runTurnAsync llmCaller executor config trimmed session registeredSchemas registeredNamesSet 
+                            |> Async.RunSynchronously
+                        
                         match result.Outcome with
                         | TurnOutcome.Failed reason when isMockMode ->
                             let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
@@ -167,7 +176,11 @@ module Program =
                             printfn "❌ API Call Failed: %s" err
                         | TurnOutcome.Completed _
                         | TurnOutcome.Interrupted -> ()
+                        
+                        loop nextSession
                     with ex ->
                         printfn "Error: %s" ex.Message
+                        loop session
 
-        0
+        let initialSession = AgentSession.initialize systemPrompt
+        loop initialSession

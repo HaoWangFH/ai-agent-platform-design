@@ -55,18 +55,13 @@ module SequentialToolWorkflowSpec =
                     |> List.choose (fun n -> match ToolName.create n with Ok x -> Some x | _ -> None)
                     |> Set.ofList
 
-                let initialState : TurnState = {
-                    Messages = [
-                        SystemMessage "You are a helpful assistant."
-                        UserMessage "Find weather in Tokyo and notify Alice."
-                    ]
-                    ApiCalls = 0
-                    EmptyContentRetries = 0
-                    Command = RunTurn
-                    Config = { MaxIterations = 5; MaxRetries = 2; ContextWindowLimit = 10; Model = "test-model" }
+                let config = { MaxIterations = 5; MaxRetries = 2; ContextWindowLimit = 10; Model = "test-model" }
+                let initialSession : AgentSessionState = {
+                    Messages = [ SystemMessage "You are a helpful assistant." ]
+                    PendingCommand = RunTurn
                 }
 
-                let! result = AgentPipeline.runTurnLoop mockLlmCaller mockExecutor [] registeredNamesSet initialState
+                let! result, nextSession = AgentRunner.runTurnAsync mockLlmCaller mockExecutor config "Find weather in Tokyo and notify Alice." initialSession [] registeredNamesSet
 
                 match result.Outcome with
                 | TurnOutcome.Completed finalResponse ->
@@ -76,7 +71,7 @@ module SequentialToolWorkflowSpec =
                 | outcome ->
                     failtestf "Expected completed outcome, got %A" outcome
 
-                match result.Messages.[2], result.Messages.[3], result.Messages.[4], result.Messages.[5], result.Messages.[6] with
+                match nextSession.Messages.[2], nextSession.Messages.[3], nextSession.Messages.[4], nextSession.Messages.[5], nextSession.Messages.[6] with
                 | AssistantMessage (_, firstCalls), ToolMessage (firstCallId, firstResult), AssistantMessage (_, secondCalls), ToolMessage (secondCallId, secondResult), AssistantMessage (finalText, []) ->
                     let actual = {|
                         FirstToolName = firstCalls |> List.tryHead |> Option.map (fun c -> ToolName.value c.Name)

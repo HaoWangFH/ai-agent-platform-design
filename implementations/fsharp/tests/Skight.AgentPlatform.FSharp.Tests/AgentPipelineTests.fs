@@ -91,15 +91,26 @@ module AgentPipelineTests =
                 let dummyExecutor : ToolExecutor =
                     fun _ _ -> async { return "tool output" }
 
-                let initialState = createTestState [ SystemMessage "sys"; UserMessage "test" ]
+                let config = {
+                    MaxIterations = 5
+                    MaxRetries = 2
+                    ContextWindowLimit = 10
+                    Model = "test-model"
+                }
+                
+                let sessionState = {
+                    Messages = [ SystemMessage "sys" ]
+                    PendingCommand = RunTurn
+                }
 
-                let! result = AgentPipeline.runTurnLoop dummyLlmCaller dummyExecutor [] Set.empty initialState
+                let! result, nextSession = AgentRunner.runTurnAsync dummyLlmCaller dummyExecutor config "test" sessionState [] Set.empty
 
                 match result.Outcome with
                 | TurnOutcome.Failed reason ->
                     let actual = {| Reason = reason |}
                     let expected = {| Reason = FailureReason.ApiError "API Connection Failed" |}
                     Expect.equal actual expected "Expected API error outcome"
+                    Expect.equal nextSession.Messages.Length 2 "Expected system and user messages in session state"
                 | outcome ->
                     failtestf "Expected failed outcome, got %A" outcome
             }
