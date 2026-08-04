@@ -93,25 +93,26 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
         "You are a helpful AI assistant. You have access to various tools. " +
         "When asked to perform a task, use the tools to gather information and take actions before answering."
 
-    let mutable sessionState : AgentSessionState =
-        AgentSession.initialize systemPrompt
+    member _.SystemPrompt : string = systemPrompt
 
     member _.DefaultLlmCaller : LlmCaller = defaultLlmCaller
 
-    [<Obsolete("Use pure AgentSession.requestInterrupt instead")>]
-    member _.RequestInterrupt() =
-        sessionState <- AgentSession.requestInterrupt sessionState
+    member _.CreateInitialSession() : AgentSessionState =
+        AgentSession.initialize systemPrompt
 
-    /// Executes a turn using the composable functional loop pipeline
-    [<Obsolete("Use AgentRunner.runTurnAsync for pure functional state management")>]
-    member _.RunAsync(userInput: string, ?customLlmCaller: LlmCaller, ?customExecutor: ToolExecutor) : Async<TurnResult> =
+    member _.RunPureAsync(
+        userInput: string,
+        sessionState: AgentSessionState,
+        ?customLlmCaller: LlmCaller,
+        ?customExecutor: ToolExecutor,
+        ?registeredSchemas: ToolSchema list,
+        ?registeredNamesSet: Set<ToolName>
+    ) : Async<TurnResult * AgentSessionState> =
         async {
             let activeLlmCaller = defaultArg customLlmCaller defaultLlmCaller
             let activeExecutor = defaultArg customExecutor registry.AsExecutor
-            let registeredSchemas = registry.GetToolSchemas()
-            let registeredNamesSet = registry.GetRegisteredNames() |> Set.ofList
+            let schemas = defaultArg registeredSchemas (registry.GetToolSchemas())
+            let namesSet = defaultArg registeredNamesSet (registry.GetRegisteredNames() |> Set.ofList)
 
-            let! result, newState = AgentRunner.runTurnAsync activeLlmCaller activeExecutor config userInput sessionState registeredSchemas registeredNamesSet
-            sessionState <- newState
-            return result
+            return! AgentRunner.runTurnAsync activeLlmCaller activeExecutor config userInput sessionState schemas namesSet
         }

@@ -141,17 +141,8 @@ module Program =
         }
 
         let agent = Agent(effectiveKey, registry, config, ?endpoint=endpoint, ?jwtToken=jwtToken)
-        let llmCaller = agent.DefaultLlmCaller
-        let executor = registry.AsExecutor
-        let registeredSchemas = registry.GetToolSchemas()
-        let registeredNamesSet = registry.GetRegisteredNames() |> Set.ofList
-
         printfn "Agent is ready. Type 'exit' or 'quit' to stop."
-        
-        let systemPrompt =
-            "You are a helpful AI assistant. You have access to various tools. " +
-            "When asked to perform a task, use the tools to gather information and take actions before answering."
-        
+
         let rec loop session =
             printf "> "
             let input = Console.ReadLine()
@@ -162,8 +153,8 @@ module Program =
                 elif String.IsNullOrEmpty trimmed then loop session
                 else
                     try
-                        let result, nextSession = 
-                            AgentRunner.runTurnAsync llmCaller executor config trimmed session registeredSchemas registeredNamesSet 
+                        let result, nextSession =
+                            agent.RunPureAsync(trimmed, session)
                             |> Async.RunSynchronously
                         
                         match result.Outcome with
@@ -182,5 +173,5 @@ module Program =
                         printfn "Error: %s" ex.Message
                         loop session
 
-        let initialSession = AgentSession.initialize systemPrompt
+        let initialSession = agent.CreateInitialSession()
         loop initialSession
