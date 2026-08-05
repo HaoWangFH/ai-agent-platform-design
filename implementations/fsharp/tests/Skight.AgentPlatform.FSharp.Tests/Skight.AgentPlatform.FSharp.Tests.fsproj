@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -12,6 +12,7 @@
     <Compile Include="SequentialToolWorkflowSpec.fs" />
     <Compile Include="StreamingAggregationTests.fs" />
     <Compile Include="ToolExecutionTests.fs" />
+    <Compile Include="AgentPipelineToolIntegrationSpec.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 

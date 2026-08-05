@@ -83,8 +83,8 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
             }
 
     let systemPrompt =
-        "You are a helpful AI assistant. You have access to various tools. " +
-        "When asked to perform a task, use the tools to gather information and take actions before answering."
+        "You are a helpful AI assistant. You have access to tools including file system operations and terminal command execution. " +
+        "When asked to perform a task, inspect tool descriptions and use appropriate tools to gather information and take actions before answering."
 
     member _.SystemPrompt : string = systemPrompt
 

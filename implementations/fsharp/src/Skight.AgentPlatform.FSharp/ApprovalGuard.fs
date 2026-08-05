@@ -20,7 +20,7 @@ module ApprovalGuard =
         Regex(@"\b(rm\s+-rf|del\s+/f|format\b|shutdown\b|reboot\b|mkfs\b|diskpart\b|sudo\b)\b", RegexOptions.IgnoreCase ||| RegexOptions.Compiled)
 
     let private riskyEditPattern =
-        Regex(@"\b(password|secret|token|private[_-]?key|connectionstring)\b", RegexOptions.IgnoreCase ||| RegexOptions.Compiled)
+        Regex(@"(?i)(password|secret|token|private[_-]?key|connectionstring)", RegexOptions.Compiled)
 
     let isHighRiskCommand (command: string) =
         not (String.IsNullOrWhiteSpace(command)) && riskyCommandPattern.IsMatch(command)

@@ -153,7 +153,7 @@ module Program =
 
         registry.Register(
             "execute_command",
-            "Execute terminal command with timeout in sandbox-host environment",
+            TerminalTool.getToolDescription (),
             (fun argsJson ->
                 async {
                     try

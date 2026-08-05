@@ -20,10 +20,16 @@ module TerminalTool =
 
     let private isWindows = Environment.OSVersion.Platform = PlatformID.Win32NT
 
+    let getShellName () =
+        if isWindows then "powershell.exe" else "/bin/bash"
+
+    let getToolDescription () =
+        sprintf "Execute terminal command in %s environment with timeout handling and background process support." (getShellName ())
+
     let private createProcessStartInfo (cmdStr: string) =
         let startInfo = ProcessStartInfo()
-        startInfo.FileName <- if isWindows then "cmd.exe" else "/bin/bash"
-        startInfo.Arguments <- if isWindows then sprintf "/c \"%s\"" cmdStr else sprintf "-c \"%s\"" cmdStr
+        startInfo.FileName <- getShellName ()
+        startInfo.Arguments <- if isWindows then sprintf "-NoProfile -ExecutionPolicy Bypass -Command \"%s\"" cmdStr else sprintf "-c \"%s\"" cmdStr
         startInfo.RedirectStandardOutput <- true
         startInfo.RedirectStandardError <- true
         startInfo.RedirectStandardInput <- false
