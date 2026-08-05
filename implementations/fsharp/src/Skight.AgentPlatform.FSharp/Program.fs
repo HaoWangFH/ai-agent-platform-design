@@ -153,10 +153,28 @@ module Program =
                 elif String.IsNullOrEmpty trimmed then loop session
                 else
                     try
+                        let isLiveStreaming = not isMockMode
+
                         let result, nextSession =
-                            agent.RunPureAsync(trimmed, session)
-                            |> Async.RunSynchronously
-                        
+                            if isLiveStreaming then
+                                let mutable hasPrintedText = false
+                                let onChunk chunk =
+                                    match chunk with
+                                    | TextDelta text when not (String.IsNullOrEmpty(text)) ->
+                                        if not hasPrintedText then
+                                            printf "Assistant (stream): "
+                                            hasPrintedText <- true
+                                        printf "%s" text
+                                    | StreamCompleted _ when hasPrintedText ->
+                                        printfn ""
+                                    | _ -> ()
+
+                                agent.RunPureStreamingAsync(trimmed, session, onChunk)
+                                |> Async.RunSynchronously
+                            else
+                                agent.RunPureAsync(trimmed, session)
+                                |> Async.RunSynchronously
+
                         match result.Outcome with
                         | TurnOutcome.Failed reason when isMockMode ->
                             let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
@@ -167,7 +185,7 @@ module Program =
                             printfn "❌ API Call Failed: %s" err
                         | TurnOutcome.Completed _
                         | TurnOutcome.Interrupted -> ()
-                        
+
                         loop nextSession
                     with ex ->
                         printfn "Error: %s" ex.Message

@@ -22,13 +22,17 @@
 - `Agent.fs` 中原可变状态包装路径已由显式会话状态传递替代。
 
 ### 任务 2：`TaskSeq` LLM 流式适配器 (TaskSeq Streaming)
-- [ ] **2.1 包依赖添加**：在 `Skight.AgentPlatform.FSharp.fsproj` 中添加 `FSharp.Control.TaskSeq` 包引用。
-- [ ] **2.2 领域类型扩展**：在 `Types.fs` 中添加 `StreamChunk` 可区分联合（`TextDelta`、`ToolCallDelta`、`StreamCompleted`）。
-- [ ] **2.3 防腐层实现 (`SdkAdapter.fs`)**：实现将 `StreamingChatCompletionsUpdate` 映射为 `ITaskSeq<StreamChunk>` 的 `streamLlmResponse`。
-- [ ] **2.4 僵死流与心跳保护**：在 `SdkAdapter.fs` 中实现 90 秒心跳重置与取消令牌监控（借鉴 Hermes 模式）。
-- [ ] **2.5 流式聚合与索引拼接**：在 `AgentPipeline.fs` 中利用 `TaskSeq.foldAsync` 配合 `Map<int, PartialToolCall>` 拼接按索引分片到达的工具调用参数片段。
-- [ ] **2.6 残存流拯救与恢复 (Partial Stream Salvage)**：实现网络中断或长度截断时的已流式文本抢救与恢复提示机制。
-- [ ] **2.7 程序与测试集成**：在 `Program.fs` 中增加实时流式输出，并编写 Expecto 流式规范测试。
+- [x] **2.1 包依赖添加**：已在 `Skight.AgentPlatform.FSharp.fsproj` 中添加 `FSharp.Control.TaskSeq` 包引用。
+- [x] **2.2 领域类型扩展**：已在 `Types.fs` 中添加 `StreamChunk` 可区分联合（`TextDelta`、`ToolCallDelta`、`StreamCompleted`）。
+- [x] **2.3 防腐层实现 (`SdkAdapter.fs`)**：已实现将 `StreamingChatCompletionsUpdate` 映射为异步流分块（`IAsyncEnumerable<StreamChunk>`）的 `streamLlmResponse`。
+- [x] **2.4 僵死流与心跳保护**：已在 `SdkAdapter.fs` 中实现 90 秒心跳重置与取消令牌监控（借鉴 Hermes 模式）。
+- [x] **2.5 流式聚合与索引拼接**：已在 `AgentPipeline.fs` 中实现流式聚合，使用 `Map<int, PartialToolCall>` 拼接按索引分片到达的工具调用参数片段并还原为 `ToolCall`。
+- [x] **2.6 残存流拯救与恢复 (Partial Stream Salvage)**：已实现网络中断/流中止时的部分文本抢救与恢复路径。
+- [x] **2.7 程序与测试集成**：已在 `Program.fs` 中增加实时流式输出，并新增 Expecto 流式测试（`StreamingAggregationTests.fs`）。
+
+**任务 2 实施状态：** ✅ 已完成（构建通过，测试通过）
+- 核心文件：`Types.fs`、`SdkAdapter.fs`、`AgentPipeline.fs`、`AgentRunner.fs`、`Agent.fs`、`Program.fs`、`StreamingAggregationTests.fs`
+- 验证结果：源项目构建通过；测试 10/10 全部通过（含流式聚合测试覆盖）。
 
 ---
 

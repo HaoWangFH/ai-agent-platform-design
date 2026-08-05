@@ -3,6 +3,7 @@ namespace Skight.AgentPlatform.FSharp
 open System
 open System.Collections.Generic
 open System.Text.Json
+open System.Threading
 open Azure.AI.OpenAI
 
 /// Agent class wrapper around the pure functional AgentPipeline
@@ -20,17 +21,6 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
             OpenAIClient(Uri(ep), Azure.AzureKeyCredential(apiKey), options)
         | _ ->
             OpenAIClient(apiKey, options)
-
-    let toChatRequestMessage (msg: AgentMessage) : ChatRequestMessage =
-        match msg with
-        | SystemMessage content -> ChatRequestSystemMessage(content) :> ChatRequestMessage
-        | UserMessage content -> ChatRequestUserMessage(content) :> ChatRequestMessage
-        | AssistantMessage (content, toolCalls) ->
-            let assistant = ChatRequestAssistantMessage(content)
-            for toolCall in toolCalls do
-                assistant.ToolCalls.Add(ChatCompletionsFunctionToolCall(ToolCallId.value toolCall.Id, ToolName.value toolCall.Name, toolCall.ArgumentsJson))
-            assistant :> ChatRequestMessage
-        | ToolMessage (toolCallId, content) -> ChatRequestToolMessage(content, ToolCallId.value toolCallId) :> ChatRequestMessage
 
     let (|FunctionToolCall|_|) (tc: ChatCompletionsToolCall) =
         match tc with
@@ -62,22 +52,15 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
             ToolCalls = toolCalls
         }
 
-    let toFunctionDefinition (schema: ToolSchema) : FunctionDefinition =
-        FunctionDefinition(
-            Name = ToolName.value schema.Name,
-            Description = schema.Description,
-            Parameters = BinaryData.FromString(schema.ParametersJson)
-        )
-
     // Standard default Azure.AI.OpenAI LLM caller implementation
     let defaultLlmCaller : LlmCaller =
         fun schemas msgs ->
             async {
-                let requestMessages = msgs |> List.map toChatRequestMessage
+                let requestMessages = msgs |> List.map SdkAdapter.toChatRequestMessage
                 let reqOptions = ChatCompletionsOptions(config.Model, requestMessages)
                 reqOptions.Temperature <- Nullable(0.7f)
                 for schema in schemas do
-                    reqOptions.Tools.Add(ChatCompletionsFunctionToolDefinition(toFunctionDefinition schema))
+                    reqOptions.Tools.Add(ChatCompletionsFunctionToolDefinition(SdkAdapter.toFunctionDefinition schema))
                 try
                     let! resp = client.GetChatCompletionsAsync(reqOptions) |> Async.AwaitTask
                     let completions = resp.Value
@@ -85,6 +68,16 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
                         return Error NoChoicesReturned
                     else
                         return Ok (toDomainResponse completions.Choices.[0].Message)
+                with ex ->
+                    return Error (ApiCallFailed ex.Message)
+            }
+
+    let defaultStreamingCallerFactory (cancellationToken: CancellationToken) (onChunk: StreamChunk -> unit) : StreamingLlmCaller =
+        fun schemas msgs ->
+            async {
+                try
+                    let stream = SdkAdapter.streamLlmResponseWithCallback client config schemas msgs cancellationToken onChunk
+                    return Ok stream
                 with ex ->
                     return Error (ApiCallFailed ex.Message)
             }
@@ -115,4 +108,24 @@ type Agent(apiKey: string, registry: ToolRegistry, config: AgentConfig, ?endpoin
             let namesSet = defaultArg registeredNamesSet (registry.GetRegisteredNames() |> Set.ofList)
 
             return! AgentRunner.runTurnAsync activeLlmCaller activeExecutor config userInput sessionState schemas namesSet
+        }
+
+    member _.RunPureStreamingAsync(
+        userInput: string,
+        sessionState: AgentSessionState,
+        onChunk: StreamChunk -> unit,
+        ?customStreamingLlmCallerFactory: (CancellationToken -> (StreamChunk -> unit) -> StreamingLlmCaller),
+        ?customExecutor: ToolExecutor,
+        ?registeredSchemas: ToolSchema list,
+        ?registeredNamesSet: Set<ToolName>,
+        ?cancellationToken: CancellationToken
+    ) : Async<TurnResult * AgentSessionState> =
+        async {
+            let activeFactory = defaultArg customStreamingLlmCallerFactory defaultStreamingCallerFactory
+            let activeExecutor = defaultArg customExecutor registry.AsExecutor
+            let schemas = defaultArg registeredSchemas (registry.GetToolSchemas())
+            let namesSet = defaultArg registeredNamesSet (registry.GetRegisteredNames() |> Set.ofList)
+            let ct = defaultArg cancellationToken CancellationToken.None
+
+            return! AgentRunner.runTurnStreamingAsync activeFactory activeExecutor config userInput sessionState schemas namesSet onChunk ct
         }

@@ -2,6 +2,7 @@ namespace Skight.AgentPlatform.FSharp
 
 open System
 open System.Collections.Generic
+open System.Text
 open System.Text.Json
 open Azure.AI.OpenAI
 
@@ -11,6 +12,106 @@ type BearerTokenPolicy(token: string) =
         message.Request.Headers.SetValue("Authorization", sprintf "Bearer %s" token)
 
 module AgentPipeline =
+
+    type PartialToolCall = {
+        Id: ToolCallId option
+        Name: ToolName option
+        ArgsBuilder: StringBuilder
+    }
+
+    let private emptyPartialToolCall = {
+        Id = None
+        Name = None
+        ArgsBuilder = StringBuilder()
+    }
+
+    let private upsertPartialToolCall (index: int) (idOpt: ToolCallId option) (nameOpt: ToolName option) (argsFragment: string) (partials: Map<int, PartialToolCall>) =
+        let current = partials |> Map.tryFind index |> Option.defaultValue emptyPartialToolCall
+        let nextId = if idOpt.IsSome then idOpt else current.Id
+        let nextName = if nameOpt.IsSome then nameOpt else current.Name
+        if not (String.IsNullOrEmpty(argsFragment)) then
+            current.ArgsBuilder.Append(argsFragment) |> ignore
+
+        partials
+        |> Map.add index {
+            Id = nextId
+            Name = nextName
+            ArgsBuilder = current.ArgsBuilder
+        }
+
+    let private toToolCalls (partials: Map<int, PartialToolCall>) : ToolCall list =
+        partials
+        |> Seq.sortBy (fun kv -> kv.Key)
+        |> Seq.choose (fun kv ->
+            match kv.Value.Id, kv.Value.Name with
+            | Some id, Some name ->
+                Some {
+                    Id = id
+                    Name = name
+                    ArgumentsJson = kv.Value.ArgsBuilder.ToString()
+                }
+            | _ -> None)
+        |> Seq.toList
+
+    let aggregateStreamResponse (stream: System.Collections.Generic.IAsyncEnumerable<StreamChunk>) : Async<Result<LlmTurnResponse, StreamAggregationError>> =
+        async {
+            let textBuilder = StringBuilder()
+            let mutable hasCompleted = false
+            let mutable finishReason = ""
+            let mutable partialToolCalls = Map.empty<int, PartialToolCall>
+
+            try
+                let enumerator = stream.GetAsyncEnumerator()
+                let mutable keepReading = true
+
+                while keepReading do
+                    let! hasNext = enumerator.MoveNextAsync().AsTask() |> Async.AwaitTask
+                    if not hasNext then
+                        keepReading <- false
+                    else
+                        match enumerator.Current with
+                        | TextDelta content ->
+                            if not (String.IsNullOrEmpty(content)) then
+                                textBuilder.Append(content) |> ignore
+                        | ToolCallDelta (index, idOpt, nameOpt, argsFragment) ->
+                            partialToolCalls <- upsertPartialToolCall index idOpt nameOpt argsFragment partialToolCalls
+                        | StreamCompleted reason ->
+                            hasCompleted <- true
+                            finishReason <- reason
+
+                let text = textBuilder.ToString()
+                let toolCalls = toToolCalls partialToolCalls
+
+                if hasCompleted then
+                    let normalized = if isNull finishReason then "" else finishReason.Trim().ToLowerInvariant()
+                    if normalized = "length" then
+                        return Error (PartialResponse text)
+                    else
+                        return Ok { Content = text; ToolCalls = toolCalls }
+                else
+                    if String.IsNullOrWhiteSpace(text) then
+                        return Error (PartialResponse "")
+                    else
+                        return Error (PartialResponse text)
+            with _ ->
+                let partialText = textBuilder.ToString()
+                return Error (PartialResponse partialText)
+        }
+
+    let streamToLlmResponse (streamingCaller: StreamingLlmCaller) (schemas: ToolSchema list) (msgs: AgentMessage list) : Async<Result<LlmTurnResponse, LlmError>> =
+        async {
+            let! streamResult = streamingCaller schemas msgs
+            match streamResult with
+            | Error err -> return Error err
+            | Ok stream ->
+                let! aggregated = aggregateStreamResponse stream
+                match aggregated with
+                | Ok response -> return Ok response
+                | Error (PartialResponse partialText) when not (String.IsNullOrWhiteSpace(partialText)) ->
+                    return Ok { Content = partialText; ToolCalls = [] }
+                | Error _ ->
+                    return Error NoChoicesReturned
+        }
 
     /// Step 2.1a: Pre-API Check - Interrupt Guard
     let checkInterrupt (state: TurnState) : StepResult<TurnState, TurnResult> =

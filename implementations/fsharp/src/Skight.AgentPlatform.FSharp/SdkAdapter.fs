@@ -7,7 +7,7 @@ open FSharp.Control
 
 module SdkAdapter =
 
-    let private toChatRequestMessage (msg: AgentMessage) : ChatRequestMessage =
+    let toChatRequestMessage (msg: AgentMessage) : ChatRequestMessage =
         match msg with
         | SystemMessage content -> ChatRequestSystemMessage(content) :> ChatRequestMessage
         | UserMessage content -> ChatRequestUserMessage(content) :> ChatRequestMessage
@@ -19,7 +19,7 @@ module SdkAdapter =
         | ToolMessage (toolCallId, content) ->
             ChatRequestToolMessage(content, ToolCallId.value toolCallId) :> ChatRequestMessage
 
-    let private toFunctionDefinition (schema: ToolSchema) : FunctionDefinition =
+    let toFunctionDefinition (schema: ToolSchema) : FunctionDefinition =
         FunctionDefinition(
             Name = ToolName.value schema.Name,
             Description = schema.Description,
@@ -52,14 +52,19 @@ module SdkAdapter =
                 Some (ToolCallDelta(tc.ToolCallIndex, idOpt, None, ""))
 
     /// Maps SDK streaming updates into a pure StreamChunk sequence with heartbeat/cancellation guard.
-    let streamLlmResponse
+    let streamLlmResponseWithCallback
         (client: OpenAIClient)
         (config: AgentConfig)
         (schemas: ToolSchema list)
         (messages: AgentMessage list)
         (cancellationToken: CancellationToken)
+        (onChunk: StreamChunk -> unit)
         : System.Collections.Generic.IAsyncEnumerable<StreamChunk> =
         taskSeq {
+            let emit chunk =
+                onChunk chunk
+                chunk
+
             let requestMessages = messages |> List.map toChatRequestMessage
             let reqOptions = ChatCompletionsOptions(config.Model, requestMessages)
 
@@ -75,19 +80,28 @@ module SdkAdapter =
                 cts.CancelAfter(90000)
 
                 if cancellationToken.IsCancellationRequested then
-                    yield StreamCompleted "interrupted_by_user"
+                    yield emit (StreamCompleted "interrupted_by_user")
                 else
                     if not (String.IsNullOrEmpty(update.ContentUpdate)) then
-                        yield TextDelta update.ContentUpdate
+                        yield emit (TextDelta update.ContentUpdate)
 
                     match toToolCallDelta update with
-                    | Some toolDelta -> yield toolDelta
+                    | Some toolDelta -> yield emit toolDelta
                     | None -> ()
 
                     if update.FinishReason.HasValue then
-                        yield StreamCompleted (update.FinishReason.Value.ToString())
+                        yield emit (StreamCompleted (update.FinishReason.Value.ToString()))
 
             if cancellationToken.IsCancellationRequested then
-                yield StreamCompleted "interrupted_by_user"
+                yield emit (StreamCompleted "interrupted_by_user")
         }
+
+    let streamLlmResponse
+        (client: OpenAIClient)
+        (config: AgentConfig)
+        (schemas: ToolSchema list)
+        (messages: AgentMessage list)
+        (cancellationToken: CancellationToken)
+        : System.Collections.Generic.IAsyncEnumerable<StreamChunk> =
+        streamLlmResponseWithCallback client config schemas messages cancellationToken ignore
 

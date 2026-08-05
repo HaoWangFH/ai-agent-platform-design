@@ -22,13 +22,17 @@ This document outlines the design, implementation plan, and analytical evaluatio
 - Stateful wrapper path in `Agent.fs` removed in favor of explicit session threading.
 
 ### Task 2: `TaskSeq` LLM Streaming Adapter
-- [ ] **2.1 Package Dependency**: Add `FSharp.Control.TaskSeq` package reference to `Skight.AgentPlatform.FSharp.fsproj`.
-- [ ] **2.2 Domain Types**: Add `StreamChunk` Discriminated Union (`TextDelta`, `ToolCallDelta`, `StreamCompleted`) to `Types.fs`.
-- [ ] **2.3 Anti-Corruption Layer (`SdkAdapter.fs`)**: Implement `streamLlmResponse` mapping `StreamingChatCompletionsUpdate` to `ITaskSeq<StreamChunk>`.
-- [ ] **2.4 Stale Stream & Heartbeat Guard**: Implement 90s heartbeat reset and cancellation token monitoring in `SdkAdapter.fs`.
-- [ ] **2.5 Streaming Aggregator Logic**: Implement `TaskSeq.foldAsync` in `AgentPipeline.fs` to stitch streaming tool call argument fragments into `ToolCall` records using `Map<int, PartialToolCall>`.
-- [ ] **2.6 Partial Stream Salvage & Recovery**: Implement partial text buffering recovery on length truncation or stream drop.
-- [ ] **2.7 Program & Test Integration**: Add live streaming display output to `Program.fs` and create Expecto streaming specification tests.
+- [x] **2.1 Package Dependency**: Added `FSharp.Control.TaskSeq` package reference to `Skight.AgentPlatform.FSharp.fsproj`.
+- [x] **2.2 Domain Types**: Added `StreamChunk` Discriminated Union (`TextDelta`, `ToolCallDelta`, `StreamCompleted`) to `Types.fs`.
+- [x] **2.3 Anti-Corruption Layer (`SdkAdapter.fs`)**: Implemented `streamLlmResponse` mapping `StreamingChatCompletionsUpdate` to async stream chunks (`IAsyncEnumerable<StreamChunk>`).
+- [x] **2.4 Stale Stream & Heartbeat Guard**: Implemented 90s heartbeat reset and cancellation token monitoring in `SdkAdapter.fs`.
+- [x] **2.5 Streaming Aggregator Logic**: Implemented streaming aggregation in `AgentPipeline.fs` to stitch indexed tool call fragments into `ToolCall` records via `Map<int, PartialToolCall>`.
+- [x] **2.6 Partial Stream Salvage & Recovery**: Implemented partial text salvage path for interrupted/dropped streams.
+- [x] **2.7 Program & Test Integration**: Added live streaming display in `Program.fs` and Expecto streaming tests (`StreamingAggregationTests.fs`).
+
+**Task 2 Implementation Status:** ✅ Completed (build green, tests passing)
+- Core files: `Types.fs`, `SdkAdapter.fs`, `AgentPipeline.fs`, `AgentRunner.fs`, `Agent.fs`, `Program.fs`, `StreamingAggregationTests.fs`
+- Validation: source build succeeded; tests passed (10/10), including streaming aggregation coverage.
 
 ---
 

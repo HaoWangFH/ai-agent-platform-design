@@ -1,5 +1,7 @@
 namespace Skight.AgentPlatform.FSharp
 
+open System.Collections.Generic
+
 type ToolCallId = private ToolCallId of string
 module ToolCallId =
     let create (id: string) =
@@ -104,4 +106,5 @@ type StepResult<'State, 'Result> =
 
 /// Composable function type signatures for dependency injection and partial application
 type LlmCaller = ToolSchema list -> AgentMessage list -> Async<Result<LlmTurnResponse, LlmError>>
+type StreamingLlmCaller = ToolSchema list -> AgentMessage list -> Async<Result<IAsyncEnumerable<StreamChunk>, LlmError>>
 type ToolExecutor = ToolName -> string -> Async<string>

@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="AgentPipelineTests.fs" />
     <Compile Include="SequentialToolWorkflowSpec.fs" />
+    <Compile Include="StreamingAggregationTests.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 
@@ -17,6 +18,7 @@
     <PackageReference Include="Expecto" Version="10.2.1" />
     <PackageReference Include="YoloDev.Expecto.TestSdk" Version="0.14.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="FSharp.Control.TaskSeq" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
