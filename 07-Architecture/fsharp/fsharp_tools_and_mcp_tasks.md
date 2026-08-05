@@ -10,12 +10,12 @@ This document outlines the architectural design, implementation plan, security g
 ## 📋 Task Master Checklist
 
 ### Task 3: Core Tools & Safe Execution Environment
-- [ ] **3.1 Security & Sandbox Module (`ToolSecurity.fs`)**: Implement `validatePathInSandbox` path traversal guard (`Path.GetFullPath` check against workspace root).
-- [ ] **3.2 File Operations Toolset (`FileTools.fs`)**: Implement `read_file`, `write_file`, and `edit_file` (search-and-replace / diff block patch editor).
-- [ ] **3.3 Output Limit & Truncation Guard**: Implement `truncateOutput` (capping stdout/stderr at 100 KB / 500 lines with truncation markers).
-- [ ] **3.4 Process Execution Engine (`TerminalTool.fs`)**: Implement `execute_command` using `System.Diagnostics.Process` with 60s timeout handling and background process tracking.
-- [ ] **3.5 Interactive Approval Guard (`ApprovalGuard.fs`)**: Implement confirmation hook prompting users before executing high-risk commands or file edits.
-- [ ] **3.6 Unit & Integration Test Suite**: Implement 3-level Expecto & MSpec test suite covering path security, process timeouts, and file operations.
+- [x] **3.1 Security & Sandbox Module (`ToolSecurity.fs`)**: Implement `validatePathInSandbox` path traversal guard (`Path.GetFullPath` check against workspace root).
+- [x] **3.2 File Operations Toolset (`FileTools.fs`)**: Implement `read_file`, `write_file`, and `edit_file` (search-and-replace / diff block patch editor).
+- [x] **3.3 Output Limit & Truncation Guard**: Implement `truncateOutput` (capping stdout/stderr at 100 KB / 500 lines with truncation markers).
+- [x] **3.4 Process Execution Engine (`TerminalTool.fs`)**: Implement `execute_command` using `System.Diagnostics.Process` with 60s timeout handling and background process tracking.
+- [x] **3.5 Interactive Approval Guard (`ApprovalGuard.fs`)**: Implement confirmation hook prompting users before executing high-risk commands or file edits.
+- [x] **3.6 Unit & Integration Test Suite**: Implement 3-level Expecto & MSpec test suite covering path security, process timeouts, and file operations.
 
 ### Task 4: MCP (Model Context Protocol) Server Integration
 - [ ] **4.1 JSON-RPC 2.0 Protocol Adapter (`McpProtocol.fs`)**: Implement JSON-RPC 2.0 request/response serializers for `stdio` IPC.

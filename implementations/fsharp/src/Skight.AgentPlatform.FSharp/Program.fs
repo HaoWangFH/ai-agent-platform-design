@@ -92,8 +92,14 @@ module Program =
         printfn "Initializing F# Agent (Model: %s)..." selectedModel
 
         let registry = ToolRegistry()
+        let workspaceRoot =
+            match Environment.GetEnvironmentVariable("AGENT_WORKSPACE_ROOT") with
+            | null | "" -> Directory.GetCurrentDirectory()
+            | value -> value
 
-        // Register mock tools
+        let approvalPrompt = ApprovalGuard.createConsolePrompt()
+
+        // Register mock example tool
         registry.Register(
             "get_weather",
             "Get the current weather for a location",
@@ -116,21 +122,71 @@ module Program =
 
         registry.Register(
             "read_file",
-            "Read file contents from disk",
+            "Read file contents from disk inside sandbox workspace",
+            (fun argsJson -> FileTools.readFileTool workspaceRoot argsJson),
+            """{"type":"object","properties":{"path":{"type":"string"},"max_bytes":{"type":"integer"}},"required":["path"]}"""
+        )
+
+        registry.Register(
+            "write_file",
+            "Write file contents to disk inside sandbox workspace",
+            (fun argsJson ->
+                async {
+                    match! ApprovalGuard.requireFileEditApproval approvalPrompt "write_file" argsJson with
+                    | Error err -> return sprintf "Approval denied: %s" err
+                    | Ok () -> return! FileTools.writeFileTool workspaceRoot argsJson
+                }),
+            """{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}},"required":["path","content"]}"""
+        )
+
+        registry.Register(
+            "edit_file",
+            "Edit file contents via search/replace or SEARCH/REPLACE diff blocks inside sandbox workspace",
+            (fun argsJson ->
+                async {
+                    match! ApprovalGuard.requireFileEditApproval approvalPrompt "edit_file" argsJson with
+                    | Error err -> return sprintf "Approval denied: %s" err
+                    | Ok () -> return! FileTools.editFileTool workspaceRoot argsJson
+                }),
+            """{"type":"object","properties":{"path":{"type":"string"},"search":{"type":"string"},"replace":{"type":"string"},"patch":{"type":"string"}},"required":["path"]}"""
+        )
+
+        registry.Register(
+            "execute_command",
+            "Execute terminal command with timeout in sandbox-host environment",
             (fun argsJson ->
                 async {
                     try
                         use doc = JsonDocument.Parse(argsJson)
-                        let path = doc.RootElement.GetProperty("path").GetString()
-                        if File.Exists(path) then
-                            let content = File.ReadAllText(path)
-                            return content
-                        else
-                            return sprintf "Error: File '%s' not found." path
+                        let root = doc.RootElement
+                        let command = root.GetProperty("command").GetString()
+
+                        match! ApprovalGuard.requireCommandApproval approvalPrompt command with
+                        | Error err ->
+                            return sprintf "Approval denied: %s" err
+                        | Ok () ->
+                            let timeoutMs =
+                                let mutable timeoutElement = Unchecked.defaultof<JsonElement>
+                                if root.TryGetProperty("timeout_ms", &timeoutElement) then timeoutElement.GetInt32() else 60_000
+
+                            let maxOutputBytes =
+                                let mutable maxElement = Unchecked.defaultof<JsonElement>
+                                if root.TryGetProperty("max_output_bytes", &maxElement) then maxElement.GetInt32() else 100 * 1024
+
+                            let background =
+                                let mutable bgElement = Unchecked.defaultof<JsonElement>
+                                if root.TryGetProperty("background", &bgElement) then bgElement.GetBoolean() else false
+
+                            if background then
+                                match TerminalTool.startBackgroundCommand command with
+                                | Ok handle -> return sprintf "Started background command %s at %O" handle.Id handle.StartedAtUtc
+                                | Error err -> return sprintf "Error: %s" err
+                            else
+                                return! TerminalTool.executeCommandAsync timeoutMs maxOutputBytes command
                     with ex ->
-                        return sprintf "Error reading file: %s" ex.Message
+                        return sprintf "Error executing command tool: %s" ex.Message
                 }),
-            """{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}"""
+            """{"type":"object","properties":{"command":{"type":"string"},"timeout_ms":{"type":"integer"},"max_output_bytes":{"type":"integer"},"background":{"type":"boolean"}},"required":["command"]}"""
         )
 
         let config = {

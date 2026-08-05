@@ -10,12 +10,12 @@
 ## 📋 任务主清单 (Task Master Checklist)
 
 ### 任务 3：核心工具与安全执行环境 (Core Tools & Security)
-- [ ] **3.1 安全与沙箱模块 (`ToolSecurity.fs`)**：实现 `validateSandboxPath` 路径跨越守卫（基于工作区根目录的 `Path.GetFullPath` 校验）。
-- [ ] **3.2 文件操作工具集 (`FileTools.fs`)**：实现 `read_file`、`write_file` 和 `edit_file`（查找替换 / 统一 Diff 块补丁编辑器）。
-- [ ] **3.3 输出限制与截断守卫**：实现 `truncateOutput`（将 stdout/stderr 限制在 100 KB / 500 行以内并带有截断标记）。
-- [ ] **3.4 进程执行引擎 (`TerminalTool.fs`)**：使用 `System.Diagnostics.Process` 实现 `execute_command`，具备 60 秒超时处理与后台进程追踪。
-- [ ] **3.5 交互式审批守卫 (`ApprovalGuard.fs`)**：实现确认钩子，在执行高风险命令或文件修改前提示用户确认。
-- [ ] **3.6 单元与集成测试套件**：编写覆盖路径安全、进程超时及文件操作的 3 层 Expecto & MSpec 测试套件。
+- [x] **3.1 安全与沙箱模块 (`ToolSecurity.fs`)**：实现 `validateSandboxPath` 路径跨越守卫（基于工作区根目录的 `Path.GetFullPath` 校验）。
+- [x] **3.2 文件操作工具集 (`FileTools.fs`)**：实现 `read_file`、`write_file` 和 `edit_file`（查找替换 / 统一 Diff 块补丁编辑器）。
+- [x] **3.3 输出限制与截断守卫**：实现 `truncateOutput`（将 stdout/stderr 限制在 100 KB / 500 行以内并带有截断标记）。
+- [x] **3.4 进程执行引擎 (`TerminalTool.fs`)**：使用 `System.Diagnostics.Process` 实现 `execute_command`，具备 60 秒超时处理与后台进程追踪。
+- [x] **3.5 交互式审批守卫 (`ApprovalGuard.fs`)**：实现确认钩子，在执行高风险命令或文件修改前提示用户确认。
+- [x] **3.6 单元与集成测试套件**：编写覆盖路径安全、进程超时及文件操作的 3 层 Expecto & MSpec 测试套件。
 
 ### 任务 4：MCP (Model Context Protocol) 服务端集成 (MCP Integration)
 - [ ] **4.1 JSON-RPC 2.0 协议适配器 (`McpProtocol.fs`)**：实现适用于 `stdio` IPC 的 JSON-RPC 2.0 请求/响应序列化器。
