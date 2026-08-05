@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -8,6 +8,10 @@
 
   <ItemGroup>
     <Compile Include="Types.fs" />
+    <Compile Include="ToolSecurity.fs" />
+    <Compile Include="ApprovalGuard.fs" />
+    <Compile Include="FileTools.fs" />
+    <Compile Include="TerminalTool.fs" />
     <Compile Include="ToolRegistry.fs" />
     <Compile Include="AgentSession.fs" />
     <Compile Include="SdkAdapter.fs" />
