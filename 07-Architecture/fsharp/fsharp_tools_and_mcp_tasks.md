@@ -18,11 +18,11 @@ This document outlines the architectural design, implementation plan, security g
 - [x] **3.6 Unit & Integration Test Suite**: Implement 3-level Expecto & MSpec test suite covering path security, process timeouts, and file operations.
 
 ### Task 4: MCP (Model Context Protocol) Server Integration
-- [ ] **4.1 JSON-RPC 2.0 Protocol Adapter (`McpProtocol.fs`)**: Implement JSON-RPC 2.0 request/response serializers for `stdio` IPC.
-- [ ] **4.2 MCP Client Manager (`McpClient.fs`)**: Implement `McpClient` managing subprocess lifecycle (`npx` / executable MCP servers) over stdin/stdout.
-- [ ] **4.3 Schema Translator (`McpSchemaTranslator.fs`)**: Translate MCP `tools/list` response manifests into `ToolSchema` records.
-- [ ] **4.4 Registry Auto-Discovery**: Bind MCP tools dynamically into `ToolRegistry.fs`.
-- [ ] **4.5 MCP Specification Test Suite**: Implement Expecto tests using mock stdio MCP server subprocesses.
+- [x] **4.1 JSON-RPC 2.0 Protocol Adapter (`McpProtocol.fs`)**: Implement JSON-RPC 2.0 request/response serializers for `stdio` IPC.
+- [x] **4.2 MCP Client Manager (`McpClient.fs`)**: Implement `McpClient` managing subprocess lifecycle (`npx` / executable MCP servers) over stdin/stdout.
+- [x] **4.3 Schema Translator (`McpSchemaTranslator.fs`)**: Translate MCP `tools/list` response manifests into `ToolSchema` records.
+- [x] **4.4 Registry Auto-Discovery**: Bind MCP tools dynamically into `ToolRegistry.fs`.
+- [x] **4.5 MCP Specification Test Suite**: Implement Expecto tests using mock stdio MCP server subprocesses.
 
 ---
 
