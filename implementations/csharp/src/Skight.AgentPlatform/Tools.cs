@@ -134,6 +134,30 @@ namespace Skight.AgentPlatform
             registry.Register("git_push", "Push committed changes to origin.",
                 argsJson => GitTools.GitPushAsync(workspaceRoot),
                 @"{""type"":""object"",""properties"":{}}");
+
+            registry.Register("web_fetch_content", "Fetch text content from a web URL.",
+                argsJson => WebTools.FetchUrlContentAsync(argsJson),
+                @"{""type"":""object"",""properties"":{""url"":{""type"":""string""}},""required"":[""url""]}");
+
+            registry.Register("store_memory", "Store a key-value memory.",
+                argsJson => MemoryTool.StoreMemoryAsync(argsJson),
+                @"{""type"":""object"",""properties"":{""key"":{""type"":""string""},""value"":{""type"":""string""}},""required"":[""key"",""value""]}");
+
+            registry.Register("recall_memory", "Recall a stored memory by key.",
+                argsJson => MemoryTool.RecallMemoryAsync(argsJson),
+                @"{""type"":""object"",""properties"":{""key"":{""type"":""string""}},""required"":[""key""]}");
+
+            registry.Register("add_todo", "Add a task to the session TODO list.",
+                argsJson => TodoTool.AddTodoAsync(argsJson),
+                @"{""type"":""object"",""properties"":{""task"":{""type"":""string""}},""required"":[""task""]}");
+
+            registry.Register("list_todos", "List all session TODO tasks.",
+                argsJson => TodoTool.ListTodosAsync(),
+                @"{""type"":""object"",""properties"":{}}");
+
+            registry.Register("complete_todo", "Mark a session TODO task as complete.",
+                argsJson => TodoTool.CompleteTodoAsync(argsJson),
+                @"{""type"":""object"",""properties"":{""id"":{""type"":""integer""}},""required"":[""id""]}");
         }
 
         public static void RegisterDelegateTool(ToolRegistry registry, AgentConfig config)

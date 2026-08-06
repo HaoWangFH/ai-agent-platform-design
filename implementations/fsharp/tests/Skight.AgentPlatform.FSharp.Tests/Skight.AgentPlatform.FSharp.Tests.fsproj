@@ -17,6 +17,9 @@
     <Compile Include="GitToolsSpecs.fs" />
     <Compile Include="SecurityGuardSpecs.fs" />
     <Compile Include="DelegateToolSpecs.fs" />
+    <Compile Include="WebToolsSpecs.fs" />
+    <Compile Include="MemoryToolSpecs.fs" />
+    <Compile Include="TodoToolSpecs.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 

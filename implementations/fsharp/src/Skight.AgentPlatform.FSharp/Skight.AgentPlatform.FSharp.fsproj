@@ -13,6 +13,9 @@
     <Compile Include="FileTools.fs" />
     <Compile Include="TerminalTool.fs" />
     <Compile Include="GitTools.fs" />
+    <Compile Include="WebTools.fs" />
+    <Compile Include="MemoryTool.fs" />
+    <Compile Include="TodoTool.fs" />
     <Compile Include="ToolRegistry.fs" />
     <Compile Include="McpProtocol.fs" />
     <Compile Include="McpSchemaTranslator.fs" />
