@@ -21,6 +21,7 @@
     <Compile Include="MemoryToolSpecs.fs" />
     <Compile Include="TodoToolSpecs.fs" />
     <Compile Include="SystemInfoToolSpecs.fs" />
+    <Compile Include="ExtendedToolsSpecs.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 

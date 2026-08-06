@@ -17,6 +17,9 @@
     <Compile Include="MemoryTool.fs" />
     <Compile Include="TodoTool.fs" />
     <Compile Include="SystemInfoTool.fs" />
+    <Compile Include="MediaTools.fs" />
+    <Compile Include="IntegrationTools.fs" />
+    <Compile Include="AutomationTools.fs" />
     <Compile Include="ToolRegistry.fs" />
     <Compile Include="McpProtocol.fs" />
     <Compile Include="McpSchemaTranslator.fs" />

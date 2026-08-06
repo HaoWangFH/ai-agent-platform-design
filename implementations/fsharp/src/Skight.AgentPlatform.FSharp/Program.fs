@@ -201,6 +201,9 @@ module Program =
         registry.Register("git_diff", "Get uncommitted git diff of workspace.", (fun _ -> GitTools.gitDiff workspaceRoot |> Async.AwaitTask), """{"type":"object","properties":{}}""")
         registry.Register("git_log", "Get recent git commit history.", (fun argsJson -> GitTools.gitLog workspaceRoot argsJson |> Async.AwaitTask), """{"type":"object","properties":{"count":{"type":"integer"}}}""")
         registry.Register("system_info", "Get environment and system information.", (fun _ -> SystemInfoTool.getSystemInfoAsync workspaceRoot |> Async.AwaitTask), """{"type":"object","properties":{}}""")
+        registry.Register("inspect_image", "Inspect image file metadata and encode as Base64 Data URI.", (fun argsJson -> MediaTools.inspectImageAsync workspaceRoot argsJson |> Async.AwaitTask), """{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}""")
+        registry.Register("send_webhook", "Send HTTP REST Webhook payload to external integration endpoints.", (fun argsJson -> IntegrationTools.sendWebhookAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"url":{"type":"string"},"method":{"type":"string"},"payload":{"type":"object"}},"required":["url"]}""")
+        registry.Register("schedule_timer", "Schedule a background automation timer notification.", (fun argsJson -> AutomationTools.scheduleTimerAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"seconds":{"type":"integer"},"prompt":{"type":"string"}},"required":["seconds","prompt"]}""")
 
         // Optional MCP Server Auto-Discovery via environment variables
         let mcpCmd = Environment.GetEnvironmentVariable("MCP_SERVER_CMD")
