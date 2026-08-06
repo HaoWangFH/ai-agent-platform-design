@@ -189,6 +189,21 @@ module Program =
             """{"type":"object","properties":{"command":{"type":"string"},"timeout_ms":{"type":"integer"},"max_output_bytes":{"type":"integer"},"background":{"type":"boolean"}},"required":["command"]}"""
         )
 
+        // Optional MCP Server Auto-Discovery via environment variables
+        let mcpCmd = Environment.GetEnvironmentVariable("MCP_SERVER_CMD")
+        let mcpArgs = Environment.GetEnvironmentVariable("MCP_SERVER_ARGS")
+
+        let mutable mcpClientOpt : McpClient option = None
+
+        if not (String.IsNullOrWhiteSpace(mcpCmd)) then
+            let argsStr = if isNull mcpArgs then "" else mcpArgs
+            printfn "Connecting to external MCP Server: %s %s..." mcpCmd argsStr
+            let client = new McpClient(mcpCmd, argsStr)
+            mcpClientOpt <- Some client
+            match registry.RegisterMcpClientAsync(client) |> Async.RunSynchronously with
+            | Ok count -> printfn "  [MCP Auto-Discovery] Successfully registered %d MCP tool(s)!" count
+            | Error err -> printfn "  [MCP Auto-Discovery Error] Failed to register MCP server: %s" err
+
         let config = {
             MaxIterations = 10
             MaxRetries = 3
@@ -248,4 +263,9 @@ module Program =
                         loop session
 
         let initialSession = agent.CreateInitialSession()
-        loop initialSession
+        try
+            loop initialSession
+        finally
+            match mcpClientOpt with
+            | Some client -> client.Dispose()
+            | None -> ()
