@@ -14,7 +14,9 @@
     <Compile Include="ToolExecutionTests.fs" />
     <Compile Include="AgentPipelineToolIntegrationSpec.fs" />
     <Compile Include="McpIntegrationSpec.fs" />
-    <Compile Include="Phase2BusinessWorkflowSpecs.fs" />
+    <Compile Include="GitToolsSpecs.fs" />
+    <Compile Include="SecurityGuardSpecs.fs" />
+    <Compile Include="DelegateToolSpecs.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 
