@@ -2,12 +2,34 @@ namespace Skight.AgentPlatform.FSharp
 
 open System
 open System.Collections.Concurrent
+open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 
 module MemoryTool =
 
+    let private memoryFilePath = Path.Combine(Directory.GetCurrentDirectory(), ".agent_memory.json")
     let private store = ConcurrentDictionary<string, string>()
+
+    let private loadFromDisk () =
+        try
+            if File.Exists(memoryFilePath) then
+                let json = File.ReadAllText(memoryFilePath)
+                let dict = JsonSerializer.Deserialize<ConcurrentDictionary<string, string>>(json)
+                if not (isNull dict) then
+                    for kvp in dict do
+                        store.[kvp.Key] <- kvp.Value
+        with _ -> ()
+
+    let private saveToDisk () =
+        try
+            let options = JsonSerializerOptions(WriteIndented = true)
+            let json = JsonSerializer.Serialize(store, options)
+            File.WriteAllText(memoryFilePath, json)
+        with _ -> ()
+
+    // Initialize by loading from disk on startup
+    do loadFromDisk ()
 
     let storeMemoryAsync (argsJson: string) : Task<string> =
         Task.FromResult(
@@ -20,7 +42,8 @@ module MemoryTool =
                     let key = keyProp.GetString()
                     let value = valProp.GetString()
                     store.[key] <- value
-                    sprintf "Memory stored for key '%s'." key
+                    saveToDisk ()
+                    sprintf "Memory stored for key '%s'. (Saved to disk: .agent_memory.json)" key
                 | _ -> "Error: Missing 'key' or 'value' argument."
             with ex -> sprintf "Error storing memory: %s" ex.Message
         )
