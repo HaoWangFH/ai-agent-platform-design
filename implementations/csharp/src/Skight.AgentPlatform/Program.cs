@@ -122,7 +122,15 @@ namespace Skight.AgentPlatform
                 Console.WriteLine($"Warning: Could not load mock tools from {specPath}: {ex.Message}");
             }
 
-            var agent = new Agent(apiKey, registry, model, endpoint, jwtToken);
+            var config = new AgentConfig
+            {
+                ApiKey = apiKey,
+                Model = model,
+                Endpoint = endpoint,
+                JwtToken = jwtToken
+            };
+
+            var agent = new AgentRunner(config, registry);
             
             Console.WriteLine("Agent is ready. Type 'exit' or 'quit' to stop.");
 

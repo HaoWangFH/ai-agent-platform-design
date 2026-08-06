@@ -17,7 +17,7 @@ namespace Skight.AgentPlatform.MSpec.Tests
             _registry.Register("get_weather", "Gets weather", args => Task.FromResult("25°C, Sunny"), "{}");
             _registry.Register("search_contacts", "Searches contacts", args => Task.FromResult("alice@example.com"), "{}");
 
-            _agent = new Agent("dummy_key", _registry, "test-model");
+            _agent = new AgentRunner(new AgentConfig { ApiKey = "dummy_key", Model = "test-model" }, _registry);
             _callCounter = 0;
 
             _mockLlmCaller = (schemas, msgs) =>
@@ -65,7 +65,7 @@ namespace Skight.AgentPlatform.MSpec.Tests
         }
 
         static ToolRegistry _registry;
-        static Agent _agent;
+        static AgentRunner _agent;
         static TurnResult _result;
         static int _callCounter;
         static Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>> _mockLlmCaller;

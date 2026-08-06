@@ -65,7 +65,7 @@ namespace Skight.AgentPlatform.Tests
         public async Task Agent_InterruptRequested_StopsTurnExecution()
         {
             var registry = new ToolRegistry();
-            var agent = new Agent("dummy_key", registry, "gpt-4o");
+            var agent = new AgentRunner(new AgentConfig { ApiKey = "dummy_key", Model = "gpt-4o" }, registry);
             
             agent.RequestInterrupt();
             var result = await agent.RunAsync("Hello");

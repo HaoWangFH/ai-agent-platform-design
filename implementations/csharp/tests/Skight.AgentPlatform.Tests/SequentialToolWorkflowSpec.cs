@@ -44,7 +44,7 @@ namespace Skight.AgentPlatform.Tests
             registry.Register("get_weather", "Gets weather", args => Task.FromResult("25°C, Sunny"), "{}");
             registry.Register("search_contacts", "Searches contacts", args => Task.FromResult("alice@example.com"), "{}");
 
-            var agent = new Agent("dummy_key", registry, "test-model");
+            var agent = new AgentRunner(new AgentConfig { ApiKey = "dummy_key", Model = "test-model" }, registry);
 
             // GIVEN: A mock LLM configured for 3 sequential calls
             int callCounter = 0;

@@ -16,7 +16,7 @@ I want to execute dependent tools in sequence before generating the final answer
     public class SequentialToolWorkflowLightBDD : FeatureFixture
     {
         private ToolRegistry _registry = null!;
-        private Agent _agent = null!;
+        private AgentRunner _agent = null!;
         private TurnResult _result = null!;
         private int _callCounter;
         private Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>> _mockLlmCaller = null!;
@@ -40,7 +40,7 @@ I want to execute dependent tools in sequence before generating the final answer
             _registry = new ToolRegistry();
             _registry.Register("get_weather", "Gets weather", args => Task.FromResult("25°C, Sunny"), "{}");
             _registry.Register("search_contacts", "Searches contacts", args => Task.FromResult("alice@example.com"), "{}");
-            _agent = new Agent("dummy_key", _registry, "test-model");
+            _agent = new AgentRunner(new AgentConfig { ApiKey = "dummy_key", Model = "test-model" }, _registry);
             return Task.CompletedTask;
         }
 
