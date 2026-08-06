@@ -1,38 +1,48 @@
-# Design Document: Tool Integration Architecture for C# Agent Platform
+# Design Document: Dual-Paradigm Tool Integration Architecture (C# & F#)
 
 ## 1. Overview
-This document outlines the architectural design for integrating advanced multi-agent and system interaction tools (inspired by Hermes Agent and Claude Code) into the C# Agent Platform (`Skight.AgentPlatform`).
+This document defines the architecture for integrating Phase 2 core and extended tools (Subagent Delegation, Git Automation, and Security Hooks) into the AI Agent Platform. To support language parity, the design accommodates both **Object-Oriented (C#)** and **Functional (F#)** paradigms.
 
-## 2. Core Architecture
-The C# Agent Platform uses a modular, object-oriented pipeline to process LLM interactions. 
+---
 
-### 2.1 The Tool Registry (`ToolRegistry.cs`)
-The `ToolRegistry` acts as the central hub for all executable tools. It holds a mapping between a string identifier (e.g., `"read_file"`) and an async delegate `Func<string, Task<string>>` alongside the JSON schema (`FunctionDefinition`).
+## 2. Paradigm & Design Patterns
 
-### 2.2 Tool Abstractions
-Tools will be grouped into static utility classes or injected services depending on statefulness:
-- **Stateless Tools** (e.g., `FileTools.cs`, `TerminalTool.cs`) are implemented as static classes for simplicity.
-- **Stateful Tools** (e.g., `McpClient.cs`, `BrowserTool.cs`) require dependency injection or lifecycle management.
+| Feature Component | C# (Object-Oriented) Pattern | F# (Functional) Pattern |
+| :--- | :--- | :--- |
+| **Tool Abstraction** | Static utility classes / Interfaces | Pure modules & functions (`let` bindings) |
+| **State Management** | Mutable `AgentSessionState` class | Immutable `AgentSession` record |
+| **Subagent Delegation** | Mediator / Supervisor Pattern (`DelegateTool.cs`) | Function composition & recursive loop invocation (`DelegateTool.fs`) |
+| **Security Interceptors** | Decorator Pattern over `ToolRegistry` (`ApprovalGuard.cs`) | Active Patterns / Result type wrapping (`ApprovalGuard.fs`) |
+| **Git Operations** | Facade Pattern over shell process runner | Pure wrapper functions taking execution delegates |
 
-## 3. Integration Plan
-Based on the Knowledge System analysis, the following capabilities will be designed for Phase 2:
+---
 
-### 3.1 Subagent Delegation (`DelegateTool`)
-**Design Pattern**: Mediator / Supervisor Pattern.
-- **Concept**: Allow the primary `AgentRunner` to instantiate sub-instances of itself with different system prompts or models.
-- **Interface**: `delegate_task(string agentRole, string taskDescription)`
-- **Mechanism**: The tool pauses the current context, spins up a new `AgentRunner`, awaits its `TurnResult`, and feeds the final response back as the tool output.
+## 3. Component Design
 
-### 3.2 Git Automation (`GitTools`)
-**Design Pattern**: Facade Pattern over `TerminalTool`.
-- **Concept**: Provide safe, sandboxed operations for Git workflows (similar to Claude Code's `commit-commands`).
-- **Interface**: `git_status()`, `git_commit(string message)`, `git_push()`.
+### 3.1 Tool Registry (`ToolRegistry`)
+- **C#**: `ToolRegistry` stores `Func<string, Task<string>>` handlers associated with OpenAPI/JSON schemas.
+- **F#**: `ToolRegistry` is a record or module wrapping a Map of tool name to handler function `string -> Async<string>`.
 
-### 3.3 Security & Hooks (`ApprovalGuard` / `ToolSecurity`)
-**Design Pattern**: Interceptor / Decorator Pattern.
-- **Concept**: Intercept sensitive tool executions (e.g., `execute_command` with `rm -rf`) to require human approval or deny based on predefined heuristics.
-- **Mechanism**: Implement a pre-execution hook in `ToolRegistry.ExecuteToolAsync`.
+### 3.2 Subagent Delegation (`delegate_task`)
+- **C#**: Spawns an `AgentRunner` instance with custom system prompt, executes `RunTurnLoopAsync`, returns final string response.
+- **F#**: Takes current context, constructs an isolated `AgentSession` record, calls `runTurnLoop`, and extracts the final message asynchronously.
 
-## 4. Future Considerations
-- **Web Browsing**: Introduce a `BrowserTool` using Playwright for C# to allow DOM inspection and navigation.
-- **Memory Management**: Introduce semantic search via a vector database interface for long-term memory retrieval.
+### 3.3 Security & Approval Guard (`ApprovalGuard`)
+- **C#**: Intercepts `execute_command` before running. If dangerous pattern is matched, triggers user approval callback.
+- **F#**: Evaluates command via Active Pattern `(|DangerousCommand|_|)`. If matched, yields `ApprovalRequired` union case.
+
+---
+
+## 4. Parity & File Structure
+
+```
+implementations/
+├── csharp/src/Skight.AgentPlatform/
+│   ├── GitTools.cs
+│   ├── DelegateTool.cs
+│   └── ApprovalGuard.cs
+└── fsharp/src/Skight.AgentPlatform.FSharp/
+    ├── GitTools.fs
+    ├── DelegateTool.fs
+    └── ApprovalGuard.fs
+```

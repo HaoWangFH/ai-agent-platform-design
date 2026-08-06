@@ -1,39 +1,34 @@
-# Specification Document: Tool Integration for C# Agent Platform
+# Specification Document: Tool Integration for C# & F# Agent Platforms
 
 ## 1. Introduction
-This specification defines the exact requirements and expected behaviors for the Phase 2 tool integrations in the `Skight.AgentPlatform`.
+This specification defines the behavior and acceptance criteria for Phase 2 tools across both C# (OO) and F# (FP) implementations.
 
-## 2. Requirements
+## 2. Requirements & BDD Behavior
 
-### 2.1 Git Automation Tool (`GitTools.cs`)
-**Requirement**: The agent must be able to interact with Git repositories seamlessly.
-- **Specification**:
-  - `git_status()`: Returns the current `git status` string. Must handle errors if the directory is not a git repo.
-  - `git_commit(message)`: Automatically stages all tracked files and creates a commit with the provided `message`.
-  - `git_push()`: Pushes the current branch to origin.
-- **Constraints**: 
-  - Must only operate within the configured `workspaceRoot`.
+### 2.1 Git Automation Tool (`git_status`, `git_commit`, `git_push`)
+- **Scenario**: Staging and committing workspace changes automatically.
+  - **Given** the agent has modified a file inside `workspaceRoot`.
+  - **When** the agent calls `git_commit` with message `"Fix issue"`.
+  - **Then** all modified files in `workspaceRoot` are staged and committed.
+  - **And** the tool returns a success string containing the commit hash.
 
-### 2.2 Agent Delegation Tool (`DelegateTool.cs`)
-**Requirement**: Allow the primary agent to spawn subagents to tackle complex subtasks in parallel or in isolation.
-- **Specification**:
-  - `delegate_task(role, task)`: 
-    - Spawns an ephemeral `AgentRunner`.
-    - Seeds the `AgentSessionState` with a system prompt dynamically generated from the `role`.
-    - Passes the `task` as the initial user message.
-    - Waits for the `TurnResult` up to a maximum depth of `N=10` turns.
-    - Returns the `FinalResponse` to the parent agent.
-- **Constraints**:
-  - Subagents share the parent's `ToolRegistry` but maintain an isolated `AgentSessionState`.
+### 2.2 Subagent Delegation Tool (`delegate_task`)
+- **Scenario**: Delegating a complex subtask to an isolated subagent.
+  - **Given** the main agent receives a task requiring multi-step investigation.
+  - **When** the main agent calls `delegate_task` with `role="Researcher"` and `task="Summarize README"`.
+  - **Then** a child agent session is spawned with an isolated message history.
+  - **And** the child agent runs up to depth limit 1 before returning its final answer to the parent agent.
 
-### 2.3 Security Hooks (`ApprovalGuard.cs`)
-**Requirement**: Prevent the agent from running destructive terminal commands autonomously.
-- **Specification**:
-  - A pre-execution interceptor is added to `execute_command`.
-  - If the command contains dangerous patterns (e.g., `rm -rf`, `format`, `del /s /q`), the interceptor pauses execution.
-  - Returns a payload requesting terminal UI intervention for human approval.
+### 2.3 Security Guard (`execute_command` Interception)
+- **Scenario**: Intercepting destructive commands before execution.
+  - **Given** the agent receives a request to delete files recursively (e.g. `rm -rf /` or `del /s /q *`).
+  - **When** `execute_command` is invoked with a dangerous payload.
+  - **Then** execution is halted before invoking the shell process.
+  - **And** an approval prompt is presented to the user interface.
 
-## 3. Acceptance Criteria
-- [ ] `GitTools` can successfully stage, commit, and push a test file to a local mock remote.
-- [ ] `DelegateTool` can successfully spawn a "Research" subagent that reads a file and summarizes it for the parent.
-- [ ] `ApprovalGuard` blocks an attempted `rm -rf *` command and waits for standard input (or mock test input).
+---
+
+## 3. Parity Validation Criteria
+- [ ] C# `GitTools.cs` passes XUnit / MSpec BDD specs.
+- [ ] F# `GitTools.fs` passes Expecto BDD specs.
+- [ ] Both C# and F# delegation implementations prevent infinite subagent nesting (depth <= 1).
