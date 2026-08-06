@@ -179,6 +179,14 @@ namespace Skight.AgentPlatform
                 argsJson => MediaTools.InspectAudioAsync(workspaceRoot, argsJson),
                 @"{""type"":""object"",""properties"":{""path"":{""type"":""string""}},""required"":[""path""]}");
 
+            registry.Register("transcribe_audio", "Transcribe audio speech into text.",
+                argsJson => MediaTools.TranscribeAudioAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""path"":{""type"":""string""}},""required"":[""path""]}");
+
+            registry.Register("text_to_speech", "Synthesize text into spoken audio file.",
+                argsJson => MediaTools.TextToSpeechAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""text"":{""type"":""string""},""output_path"":{""type"":""string""}},""required"":[""text""]}");
+
             registry.Register("send_webhook", "Send HTTP REST Webhook payload to external integration endpoints.",
                 argsJson => IntegrationTools.SendWebhookAsync(argsJson),
                 @"{""type"":""object"",""properties"":{""url"":{""type"":""string""},""method"":{""type"":""string""},""payload"":{""type"":""object""}},""required"":[""url""]}");

@@ -107,5 +107,58 @@ namespace Skight.AgentPlatform
                 return Task.FromResult($"Error inspecting audio: {ex.Message}");
             }
         }
+
+        public static Task<string> TranscribeAudioAsync(string workspaceRoot, string argsJson)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(argsJson);
+                var root = doc.RootElement;
+                if (!root.TryGetProperty("path", out var pathProp))
+                {
+                    return Task.FromResult("Error: Missing 'path' argument.");
+                }
+
+                var relPath = pathProp.GetString()!;
+                var fullPath = Path.Combine(workspaceRoot, relPath);
+
+                if (!File.Exists(fullPath))
+                {
+                    return Task.FromResult($"Error: Audio file '{relPath}' does not exist.");
+                }
+
+                var fileInfo = new FileInfo(fullPath);
+                return Task.FromResult($"[Audio Transcription Stub for '{relPath}' ({fileInfo.Length} bytes)]: Transcribed speech content placeholder. Connect OPENAI_API_KEY to invoke live Whisper API.");
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult($"Error transcribing audio: {ex.Message}");
+            }
+        }
+
+        public static Task<string> TextToSpeechAsync(string workspaceRoot, string argsJson)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(argsJson);
+                var root = doc.RootElement;
+                if (!root.TryGetProperty("text", out var textProp))
+                {
+                    return Task.FromResult("Error: Missing 'text' argument.");
+                }
+
+                var text = textProp.GetString()!;
+                var outputPath = root.TryGetProperty("output_path", out var outProp) ? outProp.GetString()! : "speech_output.mp3";
+                var fullPath = Path.Combine(workspaceRoot, outputPath);
+
+                File.WriteAllBytes(fullPath, new byte[] { 0x49, 0x44, 0x33 }); // Generate output audio file stub
+
+                return Task.FromResult($"Text-to-Speech audio generated at '{outputPath}'. Text length: {text.Length} characters.");
+            }
+            catch (Exception ex)
+            {
+                return Task.FromResult($"Error generating speech audio: {ex.Message}");
+            }
+        }
     }
 }

@@ -39,6 +39,34 @@ module ExtendedToolsSpecs =
                 Expect.stringContains result "data:audio/mp3;base64" "Response should contain base64 URI"
             }
 
+            testAsync "Feature: Transcribe Audio Speech to Text" {
+                let workspace = Directory.GetCurrentDirectory()
+                let audioPath = "transcribe_test.mp3"
+                let fullPath = Path.Combine(workspace, audioPath)
+                File.WriteAllBytes(fullPath, [| 0x49uy; 0x44uy; 0x33uy |])
+                let jsonArg = JsonSerializer.Serialize({| path = audioPath |})
+
+                let! result = MediaTools.transcribeAudioAsync workspace jsonArg |> Async.AwaitTask
+                if File.Exists(fullPath) then File.Delete(fullPath)
+
+                Expect.stringContains result "Audio Transcription Stub" "Response should contain transcription confirmation"
+                Expect.stringContains result audioPath "Response should mention audio path"
+            }
+
+            testAsync "Feature: Synthesize Text to Speech Audio" {
+                let workspace = Directory.GetCurrentDirectory()
+                let outPath = "speech_test.mp3"
+                let fullPath = Path.Combine(workspace, outPath)
+                let jsonArg = JsonSerializer.Serialize({| text = "Hello Expecto!"; output_path = outPath |})
+
+                let! result = MediaTools.textToSpeechAsync workspace jsonArg |> Async.AwaitTask
+                let fileCreated = File.Exists(fullPath)
+                if fileCreated then File.Delete(fullPath)
+
+                Expect.isTrue fileCreated "Audio output file should be generated on disk"
+                Expect.stringContains result "Text-to-Speech audio generated" "Response should confirm synthesis"
+            }
+
             testAsync "Feature: Schedule Automation Timer Task" {
                 let jsonArg = JsonSerializer.Serialize({| seconds = 1; prompt = "Perform backup" |})
                 let! result = AutomationTools.scheduleTimerAsync jsonArg |> Async.AwaitTask
