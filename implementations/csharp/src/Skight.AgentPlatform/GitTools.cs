@@ -42,5 +42,28 @@ namespace Skight.AgentPlatform
             var path = workspaceRoot.Replace('\\', '/');
             return await TerminalTool.ExecuteCommandAsync($"git -C \"{path}\" push");
         }
+
+        public static async Task<string> GitDiffAsync(string workspaceRoot)
+        {
+            var path = workspaceRoot.Replace('\\', '/');
+            return await TerminalTool.ExecuteCommandAsync($"git -C \"{path}\" diff");
+        }
+
+        public static async Task<string> GitLogAsync(string workspaceRoot, string argsJson)
+        {
+            int count = 5;
+            try
+            {
+                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(argsJson) ? "{}" : argsJson);
+                if (doc.RootElement.TryGetProperty("count", out var countProp))
+                {
+                    count = countProp.GetInt32();
+                }
+            }
+            catch { }
+
+            var path = workspaceRoot.Replace('\\', '/');
+            return await TerminalTool.ExecuteCommandAsync($"git -C \"{path}\" log -n {count} --oneline");
+        }
     }
 }

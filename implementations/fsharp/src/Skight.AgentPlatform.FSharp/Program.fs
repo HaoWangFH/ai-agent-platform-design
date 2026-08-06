@@ -198,6 +198,9 @@ module Program =
         registry.Register("add_todo", "Add a task to the session TODO list.", (fun argsJson -> TodoTool.addTodoAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"task":{"type":"string"}},"required":["task"]}""")
         registry.Register("list_todos", "List all session TODO tasks.", (fun _ -> TodoTool.listTodosAsync () |> Async.AwaitTask), """{"type":"object","properties":{}}""")
         registry.Register("complete_todo", "Mark a session TODO task as complete.", (fun argsJson -> TodoTool.completeTodoAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}""")
+        registry.Register("git_diff", "Get uncommitted git diff of workspace.", (fun _ -> GitTools.gitDiff workspaceRoot |> Async.AwaitTask), """{"type":"object","properties":{}}""")
+        registry.Register("git_log", "Get recent git commit history.", (fun argsJson -> GitTools.gitLog workspaceRoot argsJson |> Async.AwaitTask), """{"type":"object","properties":{"count":{"type":"integer"}}}""")
+        registry.Register("system_info", "Get environment and system information.", (fun _ -> SystemInfoTool.getSystemInfoAsync workspaceRoot |> Async.AwaitTask), """{"type":"object","properties":{}}""")
 
         // Optional MCP Server Auto-Discovery via environment variables
         let mcpCmd = Environment.GetEnvironmentVariable("MCP_SERVER_CMD")

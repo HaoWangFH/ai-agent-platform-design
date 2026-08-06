@@ -38,3 +38,24 @@ module GitTools =
         let path = normalizePath workspaceRoot
         TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" push" path)
         |> Async.StartAsTask
+
+    let gitDiff (workspaceRoot: string) : Task<string> =
+        let path = normalizePath workspaceRoot
+        TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" diff" path)
+        |> Async.StartAsTask
+
+    let gitLog (workspaceRoot: string) (argsJson: string) : Task<string> =
+        async {
+            let mutable count = 5
+            try
+                let doc = JsonDocument.Parse (if String.IsNullOrWhiteSpace argsJson then "{}" else argsJson)
+                use _ = doc
+                let root = doc.RootElement
+                match root.TryGetProperty("count") with
+                | true, countProp -> count <- countProp.GetInt32()
+                | false, _ -> ()
+            with _ -> ()
+
+            let path = normalizePath workspaceRoot
+            return! TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" log -n %d --oneline" path count)
+        } |> Async.StartAsTask

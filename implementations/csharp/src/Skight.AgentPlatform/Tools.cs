@@ -158,6 +158,18 @@ namespace Skight.AgentPlatform
             registry.Register("complete_todo", "Mark a session TODO task as complete.",
                 argsJson => TodoTool.CompleteTodoAsync(argsJson),
                 @"{""type"":""object"",""properties"":{""id"":{""type"":""integer""}},""required"":[""id""]}");
+
+            registry.Register("git_diff", "Get uncommitted git diff of workspace.",
+                argsJson => GitTools.GitDiffAsync(workspaceRoot),
+                @"{""type"":""object"",""properties"":{}}");
+
+            registry.Register("git_log", "Get recent git commit history.",
+                argsJson => GitTools.GitLogAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""count"":{""type"":""integer""}}}");
+
+            registry.Register("system_info", "Get environment and system information.",
+                argsJson => SystemInfoTool.GetSystemInfoAsync(workspaceRoot),
+                @"{""type"":""object"",""properties"":{}}");
         }
 
         public static void RegisterDelegateTool(ToolRegistry registry, AgentConfig config)
