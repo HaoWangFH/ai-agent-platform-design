@@ -122,6 +122,25 @@ namespace Skight.AgentPlatform
                     catch (Exception ex) { return Task.FromResult($"Error: {ex.Message}"); }
                 },
                 @"{""type"":""object"",""properties"":{""id"":{""type"":""string""}},""required"":[""id""]}");
+
+            registry.Register("git_status", "Get the git status of the workspace.",
+                argsJson => GitTools.GitStatusAsync(workspaceRoot),
+                @"{""type"":""object"",""properties"":{}}");
+
+            registry.Register("git_commit", "Stage and commit changes in workspace.",
+                argsJson => GitTools.GitCommitAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""message"":{""type"":""string""}},""required"":[""message""]}");
+
+            registry.Register("git_push", "Push committed changes to origin.",
+                argsJson => GitTools.GitPushAsync(workspaceRoot),
+                @"{""type"":""object"",""properties"":{}}");
+        }
+
+        public static void RegisterDelegateTool(ToolRegistry registry, AgentConfig config)
+        {
+            registry.Register("delegate_task", "Delegate a subtask to an autonomous subagent.",
+                argsJson => DelegateTool.DelegateTaskAsync(config, registry, argsJson),
+                @"{""type"":""object"",""properties"":{""role"":{""type"":""string""},""task"":{""type"":""string""}},""required"":[""role"",""task""]}");
         }
     }
 }
