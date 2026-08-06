@@ -133,6 +133,8 @@ namespace Skight.AgentPlatform
                 JwtToken = jwtToken
             };
 
+            Tools.RegisterDelegateTool(registry, config);
+
             var agent = new AgentRunner(config, registry);
             
             Console.WriteLine("Agent is ready. Type 'exit' or 'quit' to stop.");

@@ -189,6 +189,16 @@ module Program =
             """{"type":"object","properties":{"command":{"type":"string"},"timeout_ms":{"type":"integer"},"max_output_bytes":{"type":"integer"},"background":{"type":"boolean"}},"required":["command"]}"""
         )
 
+        registry.Register("git_status", "Get the git status of the workspace.", (fun _ -> GitTools.gitStatus workspaceRoot |> Async.AwaitTask), """{"type":"object","properties":{}}""")
+        registry.Register("git_commit", "Stage and commit changes in workspace.", (fun argsJson -> GitTools.gitCommit workspaceRoot argsJson |> Async.AwaitTask), """{"type":"object","properties":{"message":{"type":"string"}},"required":["message"]}""")
+        registry.Register("git_push", "Push committed changes to origin.", (fun _ -> GitTools.gitPush workspaceRoot |> Async.AwaitTask), """{"type":"object","properties":{}}""")
+        registry.Register("web_fetch_content", "Fetch text content from a web URL.", (fun argsJson -> WebTools.fetchUrlContentAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"url":{"type":"string"}},"required":["url"]}""")
+        registry.Register("store_memory", "Store a key-value memory.", (fun argsJson -> MemoryTool.storeMemoryAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"key":{"type":"string"},"value":{"type":"string"}},"required":["key","value"]}""")
+        registry.Register("recall_memory", "Recall a stored memory by key.", (fun argsJson -> MemoryTool.recallMemoryAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"key":{"type":"string"}},"required":["key"]}""")
+        registry.Register("add_todo", "Add a task to the session TODO list.", (fun argsJson -> TodoTool.addTodoAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"task":{"type":"string"}},"required":["task"]}""")
+        registry.Register("list_todos", "List all session TODO tasks.", (fun _ -> TodoTool.listTodosAsync () |> Async.AwaitTask), """{"type":"object","properties":{}}""")
+        registry.Register("complete_todo", "Mark a session TODO task as complete.", (fun argsJson -> TodoTool.completeTodoAsync argsJson |> Async.AwaitTask), """{"type":"object","properties":{"id":{"type":"integer"}},"required":["id"]}""")
+
         // Optional MCP Server Auto-Discovery via environment variables
         let mcpCmd = Environment.GetEnvironmentVariable("MCP_SERVER_CMD")
         let mcpArgs = Environment.GetEnvironmentVariable("MCP_SERVER_ARGS")
