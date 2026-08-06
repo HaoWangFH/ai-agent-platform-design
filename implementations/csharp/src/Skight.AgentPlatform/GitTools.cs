@@ -8,7 +8,8 @@ namespace Skight.AgentPlatform
     {
         public static async Task<string> GitStatusAsync(string workspaceRoot)
         {
-            return await TerminalTool.ExecuteCommandAsync($"git -C \"{workspaceRoot}\" status");
+            var path = workspaceRoot.Replace('\\', '/');
+            return await TerminalTool.ExecuteCommandAsync($"git -C \"{path}\" status");
         }
 
         public static async Task<string> GitCommitAsync(string workspaceRoot, string argsJson)
@@ -23,10 +24,11 @@ namespace Skight.AgentPlatform
                 }
 
                 var message = msgProp.GetString()!;
-                var addResult = await TerminalTool.ExecuteCommandAsync($"git -C \"{workspaceRoot}\" add .");
+                var path = workspaceRoot.Replace('\\', '/');
+                var addResult = await TerminalTool.ExecuteCommandAsync($"git -C \"{path}\" add .");
                 if (addResult.StartsWith("Error")) return addResult;
 
-                var commitResult = await TerminalTool.ExecuteCommandAsync($"git -C \"{workspaceRoot}\" commit -m \"{message}\"");
+                var commitResult = await TerminalTool.ExecuteCommandAsync($"git -C \"{path}\" commit -m \"{message}\"");
                 return commitResult;
             }
             catch (Exception ex)
@@ -37,7 +39,8 @@ namespace Skight.AgentPlatform
 
         public static async Task<string> GitPushAsync(string workspaceRoot)
         {
-            return await TerminalTool.ExecuteCommandAsync($"git -C \"{workspaceRoot}\" push");
+            var path = workspaceRoot.Replace('\\', '/');
+            return await TerminalTool.ExecuteCommandAsync($"git -C \"{path}\" push");
         }
     }
 }

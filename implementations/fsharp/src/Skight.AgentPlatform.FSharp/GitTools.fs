@@ -6,8 +6,11 @@ open System.Threading.Tasks
 
 module GitTools =
 
+    let private normalizePath (path: string) = path.Replace('\\', '/')
+
     let gitStatus (workspaceRoot: string) : Task<string> =
-        TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" status" workspaceRoot)
+        let path = normalizePath workspaceRoot
+        TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" status" path)
         |> Async.StartAsTask
 
     let gitCommit (workspaceRoot: string) (argsJson: string) : Task<string> =
@@ -19,11 +22,12 @@ module GitTools =
                 match root.TryGetProperty("message") with
                 | true, msgProp ->
                     let message = msgProp.GetString()
-                    let! addResult = TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" add ." workspaceRoot)
+                    let path = normalizePath workspaceRoot
+                    let! addResult = TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" add ." path)
                     if addResult.StartsWith("Error") then
                         return addResult
                     else
-                        return! TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" commit -m \"%s\"" workspaceRoot message)
+                        return! TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" commit -m \"%s\"" path message)
                 | false, _ ->
                     return "Error: Missing 'message' argument for git_commit."
             with ex ->
@@ -31,5 +35,6 @@ module GitTools =
         } |> Async.StartAsTask
 
     let gitPush (workspaceRoot: string) : Task<string> =
-        TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" push" workspaceRoot)
+        let path = normalizePath workspaceRoot
+        TerminalTool.executeCommandDefaultAsync (sprintf "git -C \"%s\" push" path)
         |> Async.StartAsTask

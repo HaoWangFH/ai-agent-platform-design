@@ -27,9 +27,10 @@ module TerminalTool =
         sprintf "Execute terminal command in %s environment with timeout handling and background process support." (getShellName ())
 
     let private createProcessStartInfo (cmdStr: string) =
+        let escapedCmd = if isWindows then cmdStr.Replace("\"", "\\\"") else cmdStr
         let startInfo = ProcessStartInfo()
         startInfo.FileName <- getShellName ()
-        startInfo.Arguments <- if isWindows then sprintf "-NoProfile -ExecutionPolicy Bypass -Command \"%s\"" cmdStr else sprintf "-c \"%s\"" cmdStr
+        startInfo.Arguments <- if isWindows then sprintf "-NoProfile -ExecutionPolicy Bypass -Command \"%s\"" escapedCmd else sprintf "-c \"%s\"" cmdStr
         startInfo.RedirectStandardOutput <- true
         startInfo.RedirectStandardError <- true
         startInfo.RedirectStandardInput <- false

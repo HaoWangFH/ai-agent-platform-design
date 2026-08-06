@@ -26,10 +26,11 @@ namespace Skight.AgentPlatform
 
         private static ProcessStartInfo CreateProcessStartInfo(string cmdStr)
         {
+            var escapedCmd = IsWindows ? cmdStr.Replace("\"", "\\\"") : cmdStr;
             return new ProcessStartInfo
             {
                 FileName = GetShellName(),
-                Arguments = IsWindows ? $"-NoProfile -ExecutionPolicy Bypass -Command \"{cmdStr}\"" : $"-c \"{cmdStr}\"",
+                Arguments = IsWindows ? $"-NoProfile -ExecutionPolicy Bypass -Command \"{escapedCmd}\"" : $"-c \"{cmdStr}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 RedirectStandardInput = false,
