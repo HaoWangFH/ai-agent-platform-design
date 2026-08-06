@@ -47,3 +47,45 @@ module MediaTools =
                 | false, _ -> "Error: Missing 'path' argument."
             with ex -> sprintf "Error inspecting image: %s" ex.Message
         )
+
+    let inspectAudioAsync (workspaceRoot: string) (argsJson: string) : Task<string> =
+        Task.FromResult(
+            try
+                let doc = JsonDocument.Parse argsJson
+                use _ = doc
+                let root = doc.RootElement
+                match root.TryGetProperty("path") with
+                | true, pathProp ->
+                    let relPath = pathProp.GetString()
+                    let fullPath = Path.Combine(workspaceRoot, relPath)
+                    if not (File.Exists(fullPath)) then
+                        sprintf "Error: Audio file '%s' does not exist." relPath
+                    else
+                        let fileInfo = FileInfo(fullPath)
+                        let bytes = File.ReadAllBytes(fullPath)
+                        let base64 = Convert.ToBase64String(bytes)
+                        let ext = fileInfo.Extension.TrimStart('.').ToLower()
+                        let mimeType =
+                            match ext with
+                            | "mp3" -> "audio/mp3"
+                            | "wav" -> "audio/wav"
+                            | "m4a" -> "audio/m4a"
+                            | "ogg" -> "audio/ogg"
+                            | "flac" -> "audio/flac"
+                            | "aac" -> "audio/aac"
+                            | _ -> "application/octet-stream"
+
+                        let preview = if base64.Length > 100 then base64.Substring(0, 100) + "..." else base64
+                        let result = {|
+                            path = relPath
+                            sizeBytes = fileInfo.Length
+                            mimeType = mimeType
+                            base64Preview = preview
+                            dataUri = sprintf "data:%s;base64,%s" mimeType base64
+                        |}
+
+                        let options = JsonSerializerOptions(WriteIndented = true)
+                        JsonSerializer.Serialize(result, options)
+                | false, _ -> "Error: Missing 'path' argument."
+            with ex -> sprintf "Error inspecting audio: %s" ex.Message
+        )

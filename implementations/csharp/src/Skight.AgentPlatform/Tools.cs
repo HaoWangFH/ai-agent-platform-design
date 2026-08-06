@@ -175,6 +175,10 @@ namespace Skight.AgentPlatform
                 argsJson => MediaTools.InspectImageAsync(workspaceRoot, argsJson),
                 @"{""type"":""object"",""properties"":{""path"":{""type"":""string""}},""required"":[""path""]}");
 
+            registry.Register("inspect_audio", "Inspect audio file metadata and encode as Base64 Data URI.",
+                argsJson => MediaTools.InspectAudioAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""path"":{""type"":""string""}},""required"":[""path""]}");
+
             registry.Register("send_webhook", "Send HTTP REST Webhook payload to external integration endpoints.",
                 argsJson => IntegrationTools.SendWebhookAsync(argsJson),
                 @"{""type"":""object"",""properties"":{""url"":{""type"":""string""},""method"":{""type"":""string""},""payload"":{""type"":""object""}},""required"":[""url""]}");

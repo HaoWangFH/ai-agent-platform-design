@@ -25,6 +25,20 @@ module ExtendedToolsSpecs =
                 Expect.stringContains result "data:image/png;base64" "Response should contain base64 URI"
             }
 
+            testAsync "Feature: Inspect Audio File and Return Data URI" {
+                let workspace = Directory.GetCurrentDirectory()
+                let audioPath = "sample_test.mp3"
+                let fullPath = Path.Combine(workspace, audioPath)
+                File.WriteAllBytes(fullPath, [| 0x49uy; 0x44uy; 0x33uy |])
+                let jsonArg = JsonSerializer.Serialize({| path = audioPath |})
+
+                let! result = MediaTools.inspectAudioAsync workspace jsonArg |> Async.AwaitTask
+                if File.Exists(fullPath) then File.Delete(fullPath)
+
+                Expect.stringContains result "audio/mp3" "Response should contain MIME type"
+                Expect.stringContains result "data:audio/mp3;base64" "Response should contain base64 URI"
+            }
+
             testAsync "Feature: Schedule Automation Timer Task" {
                 let jsonArg = JsonSerializer.Serialize({| seconds = 1; prompt = "Perform backup" |})
                 let! result = AutomationTools.scheduleTimerAsync jsonArg |> Async.AwaitTask

@@ -40,6 +40,39 @@ namespace Skight.AgentPlatform.MSpec.Tests
         static string _result;
     }
 
+    [Subject("Media Tools Module - Audio Metadata and Base64 Inspection")]
+    public class When_agent_inspects_audio_file
+    {
+        Establish context = () =>
+        {
+            _workspace = Directory.GetCurrentDirectory();
+            _audioPath = "sample_test.mp3";
+            var fullPath = Path.Combine(_workspace, _audioPath);
+            File.WriteAllBytes(fullPath, new byte[] { 0x49, 0x44, 0x33 }); // Dummy ID3 header
+            _jsonArg = JsonSerializer.Serialize(new { path = _audioPath });
+        };
+
+        Because of = () =>
+        {
+            _result = MediaTools.InspectAudioAsync(_workspace, _jsonArg).GetAwaiter().GetResult();
+        };
+
+        It should_return_audio_mime_type_and_base64_uri = () =>
+            _result.Should().Contain("audio/mp3")
+                .And.Contain("data:audio/mp3;base64");
+
+        Cleanup after = () =>
+        {
+            var fullPath = Path.Combine(_workspace, _audioPath);
+            if (File.Exists(fullPath)) File.Delete(fullPath);
+        };
+
+        static string _workspace;
+        static string _audioPath;
+        static string _jsonArg;
+        static string _result;
+    }
+
     [Subject("Automation Tools Module - Background Timer Task Scheduling")]
     public class When_agent_schedules_automation_timer
     {
