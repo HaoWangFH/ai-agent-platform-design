@@ -196,4 +196,48 @@ namespace Skight.AgentPlatform.MSpec.Tests
         static Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>> _customLlm;
         static TurnResult _result;
     }
+
+    [Subject("Agent Pipeline Core Loop - Escaped Double-Encoded Tool JSON Branch")]
+    public class When_llm_passes_escaped_double_encoded_json_string_to_tool
+    {
+        Establish context = () =>
+        {
+            _registry = new ToolRegistry();
+            _registry.Register("store_memory", "Store memory", args => Task.FromResult("Stored"), "{}");
+            _agent = new AgentRunner(new AgentConfig { ApiKey = "dummy_key", Model = "gpt-4o", MaxIterations = 2 }, _registry);
+
+            int callCount = 0;
+            _customLlm = (schemas, msgs) =>
+            {
+                callCount++;
+                if (callCount == 1)
+                {
+                    // Simulated escaped double-encoded JSON string: "\"{\\\"key\\\":\\\"theme\\\",\\\"value\\\":\\\"Dark Mode\\\"}\""
+                    var escapedJson = JsonSerializer.Serialize("{\"key\":\"theme\",\"value\":\"Dark Mode\"}");
+                    var toolCall = new ChatCompletionsFunctionToolCall("call_escaped_json", "store_memory", escapedJson);
+                    var responseMsg = AzureOpenAIModelFactory.ChatResponseMessage(ChatRole.Assistant, "", new[] { toolCall });
+                    var choice = AzureOpenAIModelFactory.ChatChoice(message: responseMsg, index: 0, finishReason: CompletionsFinishReason.ToolCalls, logProbabilityInfo: null, contentFilterResults: null);
+                    return Task.FromResult(AzureOpenAIModelFactory.ChatCompletions(null, DateTimeOffset.UtcNow, new[] { choice }, null, null, null));
+                }
+
+                var finalText = AzureOpenAIModelFactory.ChatResponseMessage(ChatRole.Assistant, "Successfully stored memory.", null);
+                var textChoice = AzureOpenAIModelFactory.ChatChoice(message: finalText, index: 0, finishReason: CompletionsFinishReason.Stopped, logProbabilityInfo: null, contentFilterResults: null);
+                return Task.FromResult(AzureOpenAIModelFactory.ChatCompletions(null, DateTimeOffset.UtcNow, new[] { textChoice }, null, null, null));
+            };
+        };
+
+        Because of = () =>
+            _result = _agent.RunAsync("Remember dark mode", _customLlm).GetAwaiter().GetResult();
+
+        It should_successfully_unescape_and_execute_tool = () =>
+            _result.Completed.Should().BeTrue();
+
+        It should_contain_tool_execution_result_message = () =>
+            _result.Messages.Should().Contain(m => m is ChatRequestToolMessage && ((ChatRequestToolMessage)m).Content.Contains("Stored"));
+
+        static ToolRegistry _registry;
+        static AgentRunner _agent;
+        static Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>> _customLlm;
+        static TurnResult _result;
+    }
 }

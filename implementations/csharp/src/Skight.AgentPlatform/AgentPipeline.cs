@@ -147,7 +147,18 @@ namespace Skight.AgentPlatform
                                 continue;
                             }
 
-                            try { using var doc = JsonDocument.Parse(string.IsNullOrEmpty(functionCall.Arguments) ? "{}" : functionCall.Arguments); }
+                            string cleanArgs = string.IsNullOrWhiteSpace(functionCall.Arguments) ? "{}" : functionCall.Arguments.Trim();
+                            if (cleanArgs.StartsWith("\"") && cleanArgs.EndsWith("\""))
+                            {
+                                try
+                                {
+                                    var unescaped = JsonSerializer.Deserialize<string>(cleanArgs);
+                                    if (!string.IsNullOrWhiteSpace(unescaped)) cleanArgs = unescaped;
+                                }
+                                catch { /* fallback */ }
+                            }
+
+                            try { using var doc = JsonDocument.Parse(cleanArgs); }
                             catch (Exception jsonEx)
                             {
                                 var errorMsg = $"Error: Invalid JSON arguments for tool '{name}': {jsonEx.Message}";
@@ -156,11 +167,11 @@ namespace Skight.AgentPlatform
                                 continue;
                             }
 
-                            Console.WriteLine($"  [Tool Execution] {name}({functionCall.Arguments})");
+                            Console.WriteLine($"  [Tool Execution] {name}({cleanArgs})");
 
                             try
                             {
-                                var result = await _registry.ExecuteToolAsync(name, functionCall.Arguments);
+                                var result = await _registry.ExecuteToolAsync(name, cleanArgs);
                                 Console.WriteLine($"  [Tool Result] {result}");
                                 session.Messages.Add(new ChatRequestToolMessage(result, callId));
                             }

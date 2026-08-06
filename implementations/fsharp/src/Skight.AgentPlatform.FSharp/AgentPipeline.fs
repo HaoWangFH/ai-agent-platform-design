@@ -189,6 +189,15 @@ module AgentPipeline =
                     return! callLlmWithRetry llmCaller schemas maxRetries (retryCount + 1) msgs
         }
 
+    let private cleanJsonArgs (argsStr: string) =
+        let trimmed = if String.IsNullOrWhiteSpace argsStr then "{}" else argsStr.Trim()
+        if trimmed.StartsWith("\"") && trimmed.EndsWith("\"") then
+            try
+                let unescaped = JsonSerializer.Deserialize<string>(trimmed)
+                if String.IsNullOrWhiteSpace unescaped then "{}" else unescaped
+            with _ -> trimmed
+        else trimmed
+
     /// Step 2.6: Process Tool Calls (Self-Correction, JSON Validation & Execution)
     let processToolCalls (executor: ToolExecutor) (registeredNamesSet: Set<ToolName>) (content: string) (toolCalls: ToolCall list) (state: TurnState) : Async<TurnState> =
         async {
@@ -198,7 +207,7 @@ module AgentPipeline =
                     async {
                         let name = toolCall.Name
                         let callId = toolCall.Id
-                        let argsStr = toolCall.ArgumentsJson
+                        let argsStr = cleanJsonArgs toolCall.ArgumentsJson
                         
                         let nameStr = ToolName.value name
 
@@ -209,7 +218,7 @@ module AgentPipeline =
                             return ToolMessage(callId, errStr)
                         else
                             try
-                                use doc = JsonDocument.Parse(if String.IsNullOrEmpty argsStr then "{}" else argsStr)
+                                use doc = JsonDocument.Parse(argsStr)
                                 printfn "  [Tool Execution] %s(%s)" nameStr argsStr
                                 let! execResult = executor name argsStr
                                 printfn "  [Tool Result] %s" execResult
