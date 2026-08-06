@@ -121,6 +121,9 @@ namespace Skight.AgentPlatform
             {
                 Console.WriteLine($"Warning: Could not load mock tools from {specPath}: {ex.Message}");
             }
+            
+            // Register real FileTools and TerminalTool
+            Tools.RegisterCoreTools(registry, Directory.GetCurrentDirectory());
 
             var config = new AgentConfig
             {

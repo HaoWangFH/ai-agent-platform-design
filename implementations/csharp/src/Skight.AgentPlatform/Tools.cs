@@ -60,5 +60,68 @@ namespace Skight.AgentPlatform
                 registry.Register(name, description, handler, parameters);
             }
         }
+        public static void RegisterCoreTools(ToolRegistry registry, string workspaceRoot)
+        {
+            registry.Register("read_file", "Read contents of a file.",
+                argsJson => FileTools.ReadFileAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""path"":{""type"":""string""}},""required"":[""path""]}");
+
+            registry.Register("write_file", "Write contents to a file.",
+                argsJson => FileTools.WriteFileAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""path"":{""type"":""string""},""content"":{""type"":""string""}},""required"":[""path"",""content""]}");
+
+            registry.Register("edit_file", "Edit a file using search/replace or patch.",
+                argsJson => FileTools.EditFileAsync(workspaceRoot, argsJson),
+                @"{""type"":""object"",""properties"":{""path"":{""type"":""string""},""search"":{""type"":""string""},""replace"":{""type"":""string""},""patch"":{""type"":""string""}},""required"":[""path""]}");
+
+            registry.Register("execute_command", TerminalTool.GetToolDescription(),
+                argsJson =>
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(argsJson);
+                        if (doc.RootElement.TryGetProperty("command", out var cmdProp))
+                        {
+                            return TerminalTool.ExecuteCommandAsync(cmdProp.GetString()!);
+                        }
+                        return Task.FromResult("Error: Missing 'command' argument.");
+                    }
+                    catch (Exception ex) { return Task.FromResult($"Error: {ex.Message}"); }
+                },
+                @"{""type"":""object"",""properties"":{""command"":{""type"":""string""}},""required"":[""command""]}");
+                
+            registry.Register("start_background_command", "Start a long running background command.",
+                argsJson =>
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(argsJson);
+                        if (doc.RootElement.TryGetProperty("command", out var cmdProp))
+                        {
+                            var id = TerminalTool.StartBackgroundCommand(cmdProp.GetString()!);
+                            return Task.FromResult($"Background command started with ID: {id}");
+                        }
+                        return Task.FromResult("Error: Missing 'command' argument.");
+                    }
+                    catch (Exception ex) { return Task.FromResult($"Error: {ex.Message}"); }
+                },
+                @"{""type"":""object"",""properties"":{""command"":{""type"":""string""}},""required"":[""command""]}");
+
+            registry.Register("get_background_command_output", "Get output of a background command.",
+                argsJson =>
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(argsJson);
+                        if (doc.RootElement.TryGetProperty("id", out var idProp))
+                        {
+                            return Task.FromResult(TerminalTool.GetBackgroundCommandOutput(idProp.GetString()!));
+                        }
+                        return Task.FromResult("Error: Missing 'id' argument.");
+                    }
+                    catch (Exception ex) { return Task.FromResult($"Error: {ex.Message}"); }
+                },
+                @"{""type"":""object"",""properties"":{""id"":{""type"":""string""}},""required"":[""id""]}");
+        }
     }
 }
