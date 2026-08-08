@@ -80,7 +80,7 @@ namespace Skight.AgentPlatform
                 if (root.TryGetProperty("search", out var searchProp) && root.TryGetProperty("replace", out var replaceProp))
                 {
                     var search = searchProp.GetString();
-                    var replace = replaceProp.GetString();
+                    var replace = replaceProp.GetString() ?? string.Empty;
                     if (!string.IsNullOrEmpty(search))
                     {
                         int index = original.IndexOf(search, StringComparison.Ordinal);
