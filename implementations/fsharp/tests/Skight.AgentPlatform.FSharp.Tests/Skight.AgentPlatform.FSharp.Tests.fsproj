@@ -22,6 +22,8 @@
     <Compile Include="TodoToolSpecs.fs" />
     <Compile Include="SystemInfoToolSpecs.fs" />
     <Compile Include="ExtendedToolsSpecs.fs" />
+    <Compile Include="MemoryStoreSpecs.fs" />
+    <Compile Include="PreVerifySpecs.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 

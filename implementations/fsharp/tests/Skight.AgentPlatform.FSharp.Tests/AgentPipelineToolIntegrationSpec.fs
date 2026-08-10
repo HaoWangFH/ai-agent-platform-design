@@ -86,6 +86,9 @@ module AgentPipelineToolIntegrationSpec =
                     EmptyContentRetries = 0
                     Command = RunTurn
                     Config = { MaxIterations = 10; MaxRetries = 2; ContextWindowLimit = 10; Model = "test-model" }
+                    HasFileMutations = false
+                    HasExecutedVerification = false
+                    PreVerifyNudges = 0
                 }
 
                 let registeredNamesSet = registry.GetRegisteredNames() |> Set.ofList
@@ -202,6 +205,9 @@ module AgentPipelineToolIntegrationSpec =
                     EmptyContentRetries = 0
                     Command = RunTurn
                     Config = { MaxIterations = 5; MaxRetries = 2; ContextWindowLimit = 10; Model = "test-model" }
+                    HasFileMutations = false
+                    HasExecutedVerification = false
+                    PreVerifyNudges = 0
                 }
 
                 let! result = AgentPipeline.runTurnLoop mockLlmCaller registry.AsExecutor [] registeredNamesSet initialState
@@ -242,6 +248,9 @@ module AgentPipelineToolIntegrationSpec =
                     EmptyContentRetries = 0
                     Command = RunTurn
                     Config = { MaxIterations = 5; MaxRetries = 2; ContextWindowLimit = 5; Model = "test-model" }
+                    HasFileMutations = false
+                    HasExecutedVerification = false
+                    PreVerifyNudges = 0
                 }
 
                 let! result = AgentPipeline.runTurnLoop mockLlmCaller registry.AsExecutor [] registeredNamesSet initialState
@@ -273,6 +282,9 @@ module AgentPipelineToolIntegrationSpec =
                     EmptyContentRetries = 0
                     Command = RunTurn
                     Config = { MaxIterations = 2; MaxRetries = 1; ContextWindowLimit = 10; Model = "test-model" }
+                    HasFileMutations = false
+                    HasExecutedVerification = false
+                    PreVerifyNudges = 0
                 }
 
                 let! result = AgentPipeline.runTurnLoop mockLlmCaller registry.AsExecutor [] registeredNamesSet initialState

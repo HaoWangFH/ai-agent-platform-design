@@ -16,6 +16,9 @@ module AgentPipelineTests =
             ContextWindowLimit = 10
             Model = "test-model"
         }
+        HasFileMutations = false
+        HasExecutedVerification = false
+        PreVerifyNudges = 0
     }
 
     [<Tests>]

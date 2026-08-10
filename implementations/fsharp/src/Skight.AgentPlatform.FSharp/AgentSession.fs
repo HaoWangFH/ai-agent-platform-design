@@ -16,6 +16,9 @@ module AgentSession =
             EmptyContentRetries = 0
             Command = session.PendingCommand
             Config = config
+            HasFileMutations = false
+            HasExecutedVerification = false
+            PreVerifyNudges = 0
         }
 
         let nextSession = {

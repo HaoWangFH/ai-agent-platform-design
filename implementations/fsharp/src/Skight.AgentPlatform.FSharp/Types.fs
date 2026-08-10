@@ -97,6 +97,9 @@ type TurnState = {
     EmptyContentRetries: int
     Command: TurnCommand
     Config: AgentConfig
+    HasFileMutations: bool
+    HasExecutedVerification: bool
+    PreVerifyNudges: int
 }
 
 /// Control flow result for composable pipeline steps

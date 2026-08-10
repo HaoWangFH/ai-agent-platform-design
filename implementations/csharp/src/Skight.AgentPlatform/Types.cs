@@ -19,5 +19,8 @@ namespace Skight.AgentPlatform
     {
         public List<ChatRequestMessage> Messages { get; set; } = new();
         public bool InterruptRequested { get; set; }
+        public bool HasFileMutations { get; set; }
+        public bool HasExecutedVerification { get; set; }
+        public int PreVerifyNudges { get; set; }
     }
 }

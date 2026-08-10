@@ -230,12 +230,22 @@ module AgentPipeline =
                     })
                 |> Async.Parallel
 
+            let mutationNames = ["file_write"; "write_to_file"; "file_patch"; "replace_file_content"]
+            let verificationNames = ["read_terminal"; "terminal_execute"; "run_tests"; "dotnet_test"]
+
+            let executedNames = toolCalls |> List.map (fun tc -> ToolName.value tc.Name)
+            let hasMutation = state.HasFileMutations || (executedNames |> List.exists (fun n -> List.contains n mutationNames))
+            let hasVerification = 
+                if executedNames |> List.exists (fun n -> List.contains n verificationNames) then true
+                elif executedNames |> List.exists (fun n -> List.contains n mutationNames) then false
+                else state.HasExecutedVerification
+
             let assistantMsg = AssistantMessage(content, toolCalls)
             let updatedHistory = state.Messages @ (assistantMsg :: (newToolMessages |> Array.toList))
-            return { state with Messages = updatedHistory }
+            return { state with Messages = updatedHistory; HasFileMutations = hasMutation; HasExecutedVerification = hasVerification }
         }
 
-    /// Step 2.7: Process Final Text Response with Empty Response Recovery
+    /// Step 2.7: Process Final Text Response with Empty Response Recovery & Pre-Verify Gate
     let processTextResponse (rawContent: string) (state: TurnState) : StepResult<TurnState, TurnResult> =
         let finalText = if isNull rawContent then "" else rawContent.Trim()
 
@@ -254,13 +264,19 @@ module AgentPipeline =
                     ApiCalls = state.ApiCalls
                 }
         else
-            printfn "Assistant: %s" finalText
-            let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []) ]
-            Exit {
-                Outcome = TurnOutcome.Completed finalText
-                Messages = updatedHistory
-                ApiCalls = state.ApiCalls
-            }
+            if state.HasFileMutations && not state.HasExecutedVerification && state.PreVerifyNudges < 2 then
+                printfn "  [Pre-Verify Quality Gate] Intercepted completed turn. Files modified without verification. Prompting agent to verify..."
+                let nudgeMsg = UserMessage "You modified files during this turn. Please verify your changes by executing unit tests or build commands before concluding."
+                let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []); nudgeMsg ]
+                Continue { state with Messages = updatedHistory; PreVerifyNudges = state.PreVerifyNudges + 1 }
+            else
+                printfn "Assistant: %s" finalText
+                let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []) ]
+                Exit {
+                    Outcome = TurnOutcome.Completed finalText
+                    Messages = updatedHistory
+                    ApiCalls = state.ApiCalls
+                }
 
     /// Pure, Tail-Recursive 4-Phase Turn Loop Function
     let rec runTurnLoop (llmCaller: LlmCaller) (executor: ToolExecutor) (registeredSchemas: ToolSchema list) (registeredNamesSet: Set<ToolName>) (state: TurnState) : Async<TurnResult> =

@@ -171,6 +171,19 @@ namespace Skight.AgentPlatform
 
                             try
                             {
+                                var mutationTools = new HashSet<string> { "file_write", "write_to_file", "file_patch", "replace_file_content" };
+                                var verificationTools = new HashSet<string> { "read_terminal", "terminal_execute", "run_tests", "dotnet_test" };
+
+                                if (mutationTools.Contains(name))
+                                {
+                                    session.HasFileMutations = true;
+                                    session.HasExecutedVerification = false;
+                                }
+                                else if (verificationTools.Contains(name))
+                                {
+                                    session.HasExecutedVerification = true;
+                                }
+
                                 var result = await _registry.ExecuteToolAsync(name, cleanArgs);
                                 Console.WriteLine($"  [Tool Result] {result}");
                                 session.Messages.Add(new ChatRequestToolMessage(result, callId));
@@ -202,6 +215,15 @@ namespace Skight.AgentPlatform
                     {
                         finalText = "(empty response)";
                     }
+                }
+
+                if (session.HasFileMutations && !session.HasExecutedVerification && session.PreVerifyNudges < 2)
+                {
+                    session.PreVerifyNudges++;
+                    Console.WriteLine("  [Pre-Verify Quality Gate] Intercepted completed turn. Files modified without verification. Prompting agent to verify...");
+                    session.Messages.Add(new ChatRequestAssistantMessage(finalText));
+                    session.Messages.Add(new ChatRequestUserMessage("You modified files during this turn. Please verify your changes by executing unit tests or build commands before concluding."));
+                    continue;
                 }
 
                 Console.WriteLine($"Assistant: {finalText}");
