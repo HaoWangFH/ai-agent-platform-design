@@ -254,6 +254,7 @@ module AgentPipeline =
                 let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []); nudgeMsg ]
                 Continue { state with Messages = updatedHistory; PreVerifyNudges = state.PreVerifyNudges + 1 }
             else
+                AgentTelemetry.trackTurnEnd state.SessionId state.UserId state.TurnIndex 0L finalText "completed"
                 let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []) ]
                 Exit {
                     Outcome = TurnOutcome.Completed finalText

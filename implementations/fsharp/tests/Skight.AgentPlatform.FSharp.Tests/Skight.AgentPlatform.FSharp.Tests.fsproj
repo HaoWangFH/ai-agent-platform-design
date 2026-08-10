@@ -27,6 +27,7 @@
     <Compile Include="SteeringSpecs.fs" />
     <Compile Include="ContextCompressorSpecs.fs" />
     <Compile Include="ClarifyToolSpecs.fs" />
+    <Compile Include="TelemetryTests.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
 

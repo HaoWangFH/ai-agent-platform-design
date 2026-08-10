@@ -57,6 +57,9 @@ module SequentialToolWorkflowSpec =
 
                 let config = { MaxIterations = 5; MaxRetries = 2; ContextWindowLimit = 10; Model = "test-model" }
                 let initialSession : AgentSessionState = {
+                    SessionId = "test_session"
+                    UserId = "test_user"
+                    TurnIndex = 1
                     Messages = [ SystemMessage "You are a helpful assistant." ]
                     PendingCommand = RunTurn
                     SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()

@@ -17,6 +17,9 @@ namespace Skight.AgentPlatform
 
     public class AgentSessionState
     {
+        public string SessionId { get; set; } = System.Guid.NewGuid().ToString("N");
+        public string UserId { get; set; } = "default_user";
+        public int TurnCount { get; set; } = 1;
         public List<ChatRequestMessage> Messages { get; set; } = new();
         public bool InterruptRequested { get; set; }
         public bool HasFileMutations { get; set; }

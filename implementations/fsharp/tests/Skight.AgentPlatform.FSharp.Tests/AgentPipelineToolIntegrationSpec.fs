@@ -81,6 +81,9 @@ module AgentPipelineToolIntegrationSpec =
                     }), "{}")
 
                 let initialState : TurnState = {
+                    SessionId = "test_session"
+                    UserId = "test_user"
+                    TurnIndex = 1
                     Messages = [ SystemMessage "sys"; UserMessage "Execute Task 3 integration flow" ]
                     ApiCalls = 0
                     EmptyContentRetries = 0
@@ -115,6 +118,9 @@ module AgentPipelineToolIntegrationSpec =
 
                 let config = { MaxIterations = 5; MaxRetries = 2; ContextWindowLimit = 10; Model = "test-model" }
                 let initialSession : AgentSessionState = {
+                    SessionId = "test_session"
+                    UserId = "test_user"
+                    TurnIndex = 1
                     Messages = [ SystemMessage "You are a helpful coding assistant." ]
                     PendingCommand = RunTurn
                     SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
@@ -202,6 +208,9 @@ module AgentPipelineToolIntegrationSpec =
                     }
 
                 let initialState : TurnState = {
+                    SessionId = "test_session"
+                    UserId = "test_user"
+                    TurnIndex = 1
                     Messages = [ SystemMessage "sys"; UserMessage "Test unregistered tool fallback" ]
                     ApiCalls = 0
                     EmptyContentRetries = 0
@@ -246,6 +255,9 @@ module AgentPipelineToolIntegrationSpec =
 
                 let longHistory = SystemMessage "System instructions" :: ([ 1 .. 12 ] |> List.map (fun i -> UserMessage (sprintf "msg %d" i)))
                 let initialState : TurnState = {
+                    SessionId = "test_session"
+                    UserId = "test_user"
+                    TurnIndex = 1
                     Messages = longHistory
                     ApiCalls = 0
                     EmptyContentRetries = 0
@@ -281,6 +293,9 @@ module AgentPipelineToolIntegrationSpec =
                 let registeredNamesSet = registry.GetRegisteredNames() |> Set.ofList
 
                 let initialState : TurnState = {
+                    SessionId = "test_session"
+                    UserId = "test_user"
+                    TurnIndex = 1
                     Messages = [ SystemMessage "sys"; UserMessage "Runaway tool call test" ]
                     ApiCalls = 0
                     EmptyContentRetries = 0

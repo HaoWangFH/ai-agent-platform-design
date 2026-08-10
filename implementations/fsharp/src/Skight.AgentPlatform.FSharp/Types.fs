@@ -73,6 +73,9 @@ type TurnCommand =
     | InterruptTurn
 
 type AgentSessionState = {
+    SessionId: string
+    UserId: string
+    TurnIndex: int
     Messages: AgentMessage list
     PendingCommand: TurnCommand
     SteeringQueue: System.Collections.Concurrent.ConcurrentQueue<string>
@@ -93,6 +96,9 @@ type ToolSchema = {
 
 /// Immutable turn state passed through pure function pipelines
 type TurnState = {
+    SessionId: string
+    UserId: string
+    TurnIndex: int
     Messages: AgentMessage list
     ApiCalls: int
     EmptyContentRetries: int

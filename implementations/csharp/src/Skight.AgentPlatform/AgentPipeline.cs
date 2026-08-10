@@ -167,7 +167,10 @@ namespace Skight.AgentPlatform
                                     session.HasExecutedVerification = true;
                                 }
 
+                                var swTool = System.Diagnostics.Stopwatch.StartNew();
                                 var result = await _registry.ExecuteToolAsync(name, cleanArgs);
+                                swTool.Stop();
+                                AgentTelemetry.TrackToolExecution(session.SessionId, session.UserId, session.TurnCount, name, swTool.ElapsedMilliseconds, cleanArgs, result);
                                 Console.WriteLine($"  [Tool Result] {result}");
                                 session.Messages.Add(new ChatRequestToolMessage(result, callId));
                             }
@@ -210,6 +213,7 @@ namespace Skight.AgentPlatform
                 }
 
                 session.Messages.Add(new ChatRequestAssistantMessage(finalText));
+                AgentTelemetry.TrackTurnEnd(session.SessionId, session.UserId, session.TurnCount, 0L, finalText, "completed");
                 return new TurnResult { FinalResponse = finalText, Messages = session.Messages, ApiCalls = apiCalls, Completed = true, ExitReason = "text_response" };
             }
 

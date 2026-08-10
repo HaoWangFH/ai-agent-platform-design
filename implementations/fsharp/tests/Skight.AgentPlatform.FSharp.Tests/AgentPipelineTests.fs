@@ -6,6 +6,9 @@ open Skight.AgentPlatform.FSharp
 module AgentPipelineTests =
 
     let createTestState (messages: AgentMessage list) : TurnState = {
+        SessionId = "test_session"
+        UserId = "test_user"
+        TurnIndex = 1
         Messages = messages
         ApiCalls = 0
         EmptyContentRetries = 0
@@ -103,6 +106,9 @@ module AgentPipelineTests =
                 }
                 
                 let sessionState = {
+                    SessionId = "test_session"
+                    UserId = "test_user"
+                    TurnIndex = 1
                     Messages = [ SystemMessage "sys" ]
                     PendingCommand = RunTurn
                     SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
