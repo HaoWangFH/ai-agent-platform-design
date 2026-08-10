@@ -14,9 +14,10 @@ let tests =
             AgentTelemetry.LogDirectory <- testDir
 
             let sessionId = sprintf "fs_sess_%s" (Guid.NewGuid().ToString("N"))
-            AgentTelemetry.trackTurnStart sessionId "fsharp_user" 1 "Run F# tests"
-            AgentTelemetry.trackToolExecution sessionId "fsharp_user" 1 "terminal_execute" 25L "{}" "Success"
-            AgentTelemetry.trackTurnEnd sessionId "fsharp_user" 1 120L "Tests completed" "completed"
+            let spanId = Guid.NewGuid().ToString("N")
+            AgentTelemetry.trackTurnStart sessionId "fsharp_user" 1 "Run F# tests" (Some sessionId) (Some spanId)
+            AgentTelemetry.trackToolExecution sessionId "fsharp_user" 1 "terminal_execute" 25L "{}" "Success" (Some sessionId) (Some spanId)
+            AgentTelemetry.trackTurnEnd sessionId "fsharp_user" 1 120L "Tests completed" "completed" (Some sessionId) (Some spanId)
             AgentTelemetry.flush()
 
             let sessionDir = Path.Combine(testDir, sessionId)
@@ -41,7 +42,7 @@ let tests =
             AgentTelemetry.LogDirectory <- testDir
 
             let sessionId = sprintf "disabled_fs_sess_%s" (Guid.NewGuid().ToString("N"))
-            AgentTelemetry.trackTurnStart sessionId "fsharp_user" 1 "Disabled test"
+            AgentTelemetry.trackTurnStart sessionId "fsharp_user" 1 "Disabled test" (Some sessionId) None
 
             do! Async.Sleep 100
 

@@ -16,6 +16,9 @@ namespace Skight.AgentPlatform
     public record TelemetryEvent
     {
         public string EventId { get; init; } = Guid.NewGuid().ToString("N");
+        public string TraceId { get; init; } = string.Empty;
+        public string SpanId { get; init; } = Guid.NewGuid().ToString("N");
+        public string? ParentSpanId { get; init; }
         public string SessionId { get; init; } = string.Empty;
         public string UserId { get; init; } = string.Empty;
         public int TurnIndex { get; init; }

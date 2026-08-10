@@ -46,6 +46,10 @@ namespace Skight.AgentPlatform
         {
             int apiCalls = 0;
             int emptyContentRetries = 0;
+            string turnSpanId = Guid.NewGuid().ToString("N");
+            var promptText = (session.Messages.LastOrDefault() as ChatRequestUserMessage)?.Content ?? string.Empty;
+            AgentTelemetry.TrackTurnStart(session.SessionId, session.UserId, session.TurnCount, promptText, session.SessionId, turnSpanId);
+            var swTurn = System.Diagnostics.Stopwatch.StartNew();
 
             while (apiCalls < config.MaxIterations)
             {
@@ -53,7 +57,10 @@ namespace Skight.AgentPlatform
                 {
                     session.InterruptRequested = false;
                     Console.WriteLine("  [Turn Exit] Turn interrupted by user.");
-                    return new TurnResult { FinalResponse = string.Empty, Messages = session.Messages, ApiCalls = apiCalls, Interrupted = true, ExitReason = "interrupted" };
+                    swTurn.Stop();
+                    var turnRes = new TurnResult { FinalResponse = string.Empty, Messages = session.Messages, ApiCalls = apiCalls, Interrupted = true, ExitReason = "interrupted" };
+                    AgentTelemetry.TrackTurnEnd(session.SessionId, session.UserId, session.TurnCount, swTurn.ElapsedMilliseconds, turnRes.FinalResponse, turnRes.ExitReason, session.SessionId, turnSpanId);
+                    return turnRes;
                 }
 
                 apiCalls++;
@@ -64,6 +71,7 @@ namespace Skight.AgentPlatform
 
                 ChatCompletions? completions = null;
                 Exception? lastError = null;
+                var swLlm = System.Diagnostics.Stopwatch.StartNew();
 
                 for (int retry = 0; retry < config.MaxRetries; retry++)
                 {
@@ -94,19 +102,29 @@ namespace Skight.AgentPlatform
                         Console.WriteLine($"  [API Error Retry {retry + 1}/{config.MaxRetries}] {ex.Message}");
                         if (retry == config.MaxRetries - 1)
                         {
-                            return new TurnResult { FinalResponse = string.Empty, Messages = session.Messages, ApiCalls = apiCalls, Failed = true, ExitReason = "api_error", Error = ex.Message };
+                            swTurn.Stop();
+                            var errRes = new TurnResult { FinalResponse = string.Empty, Messages = session.Messages, ApiCalls = apiCalls, Failed = true, ExitReason = "api_error", Error = ex.Message };
+                            AgentTelemetry.TrackTurnEnd(session.SessionId, session.UserId, session.TurnCount, swTurn.ElapsedMilliseconds, errRes.FinalResponse, errRes.ExitReason, session.SessionId, turnSpanId);
+                            return errRes;
                         }
                         await Task.Delay((int)Math.Pow(2, retry) * 1000);
                     }
                 }
 
+                swLlm.Stop();
+
                 if (completions == null || completions.Choices.Count == 0)
                 {
-                    return new TurnResult { FinalResponse = string.Empty, Messages = session.Messages, ApiCalls = apiCalls, Failed = true, ExitReason = "no_response", Error = lastError?.Message ?? "No choices returned." };
+                    swTurn.Stop();
+                    var noChoiceRes = new TurnResult { FinalResponse = string.Empty, Messages = session.Messages, ApiCalls = apiCalls, Failed = true, ExitReason = "no_response", Error = lastError?.Message ?? "No choices returned." };
+                    AgentTelemetry.TrackTurnEnd(session.SessionId, session.UserId, session.TurnCount, swTurn.ElapsedMilliseconds, noChoiceRes.FinalResponse, noChoiceRes.ExitReason, session.SessionId, turnSpanId);
+                    return noChoiceRes;
                 }
 
                 var choice = completions.Choices[0];
                 var message = choice.Message;
+
+                AgentTelemetry.TrackLlmCall(session.SessionId, session.UserId, session.TurnCount, _model, swLlm.ElapsedMilliseconds, message.Content ?? string.Empty, message.ToolCalls?.Count ?? 0, session.SessionId, turnSpanId);
 
                 if (message.ToolCalls != null && message.ToolCalls.Count > 0)
                 {
@@ -161,7 +179,7 @@ namespace Skight.AgentPlatform
                                 var swTool = System.Diagnostics.Stopwatch.StartNew();
                                 var result = await _registry.ExecuteToolAsync(name, cleanArgs);
                                 swTool.Stop();
-                                AgentTelemetry.TrackToolExecution(session.SessionId, session.UserId, session.TurnCount, name, swTool.ElapsedMilliseconds, cleanArgs, result);
+                                AgentTelemetry.TrackToolExecution(session.SessionId, session.UserId, session.TurnCount, name, swTool.ElapsedMilliseconds, cleanArgs, result, session.SessionId, turnSpanId);
                                 Console.WriteLine($"  [Tool Result] {result}");
                                 session.Messages.Add(new ChatRequestToolMessage(result, callId));
                             }
@@ -204,12 +222,16 @@ namespace Skight.AgentPlatform
                 }
 
                 session.Messages.Add(new ChatRequestAssistantMessage(finalText));
-                AgentTelemetry.TrackTurnEnd(session.SessionId, session.UserId, session.TurnCount, 0L, finalText, "completed");
+                swTurn.Stop();
+                AgentTelemetry.TrackTurnEnd(session.SessionId, session.UserId, session.TurnCount, swTurn.ElapsedMilliseconds, finalText, "completed", session.SessionId, turnSpanId);
                 return new TurnResult { FinalResponse = finalText, Messages = session.Messages, ApiCalls = apiCalls, Completed = true, ExitReason = "text_response" };
             }
 
             Console.WriteLine($"  [Turn Exit] Reached max iterations ({config.MaxIterations}).");
-            return new TurnResult { FinalResponse = "Reached maximum iteration limit.", Messages = session.Messages, ApiCalls = apiCalls, Failed = true, ExitReason = "budget_exhausted" };
+            swTurn.Stop();
+            var maxIterRes = new TurnResult { FinalResponse = "Reached maximum iteration limit.", Messages = session.Messages, ApiCalls = apiCalls, Failed = true, ExitReason = "budget_exhausted" };
+            AgentTelemetry.TrackTurnEnd(session.SessionId, session.UserId, session.TurnCount, swTurn.ElapsedMilliseconds, maxIterRes.FinalResponse, maxIterRes.ExitReason, session.SessionId, turnSpanId);
+            return maxIterRes;
         }
 
         private void DrainSteering(AgentSessionState session)

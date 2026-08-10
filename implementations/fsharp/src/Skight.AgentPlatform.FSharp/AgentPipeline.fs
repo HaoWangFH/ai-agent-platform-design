@@ -222,7 +222,10 @@ module AgentPipeline =
                             try
                                 use doc = JsonDocument.Parse(argsStr)
                                 printfn "  [Tool Execution] %s(%s)" nameStr argsStr
+                                let swTool = System.Diagnostics.Stopwatch.StartNew()
                                 let! execResult = executor name argsStr
+                                swTool.Stop()
+                                AgentTelemetry.trackToolExecution state.SessionId state.UserId state.TurnIndex nameStr swTool.ElapsedMilliseconds argsStr execResult (Some state.SessionId) (Some state.TurnSpanId)
                                 printfn "  [Tool Result] %s" execResult
                                 return ToolMessage(callId, execResult)
                             with jsonEx ->
@@ -272,7 +275,7 @@ module AgentPipeline =
                 let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []); nudgeMsg ]
                 Continue { state with Messages = updatedHistory; PreVerifyNudges = state.PreVerifyNudges + 1 }
             else
-                AgentTelemetry.trackTurnEnd state.SessionId state.UserId state.TurnIndex 0L finalText "completed"
+                AgentTelemetry.trackTurnEnd state.SessionId state.UserId state.TurnIndex 0L finalText "completed" (Some state.SessionId) (Some state.TurnSpanId)
                 let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []) ]
                 Exit {
                     Outcome = TurnOutcome.Completed finalText
@@ -328,23 +331,23 @@ module AgentPipeline =
             let preparedPayload = preparePayload stateDrained.Config.ContextWindowLimit stateDrained.Messages
 
             // Pipeline Step 2.4: Inner LLM API Call with Retry
+            let swLlm = System.Diagnostics.Stopwatch.StartNew()
             let! apiResult = callLlmWithRetry llmCaller registeredSchemas stateDrained.Config.MaxRetries 0 preparedPayload
+            swLlm.Stop()
 
             match apiResult with
             | Error NoChoicesReturned ->
                 let message = llmErrorMessage NoChoicesReturned
-                return {
-                    Outcome = TurnOutcome.Failed (FailureReason.NoResponse message)
-                    Messages = stateDrained.Messages
-                    ApiCalls = stateDrained.ApiCalls
-                }
+                let res = { Outcome = TurnOutcome.Failed (FailureReason.NoResponse message); Messages = stateDrained.Messages; ApiCalls = stateDrained.ApiCalls }
+                AgentTelemetry.trackTurnEnd stateDrained.SessionId stateDrained.UserId stateDrained.TurnIndex 0L message "no_response" (Some stateDrained.SessionId) (Some stateDrained.TurnSpanId)
+                return res
             | Error (ApiCallFailed err) ->
-                return {
-                    Outcome = TurnOutcome.Failed (FailureReason.ApiError err)
-                    Messages = stateDrained.Messages
-                    ApiCalls = stateDrained.ApiCalls
-                }
+                let res = { Outcome = TurnOutcome.Failed (FailureReason.ApiError err); Messages = stateDrained.Messages; ApiCalls = stateDrained.ApiCalls }
+                AgentTelemetry.trackTurnEnd stateDrained.SessionId stateDrained.UserId stateDrained.TurnIndex 0L err "api_error" (Some stateDrained.SessionId) (Some stateDrained.TurnSpanId)
+                return res
             | Ok response ->
+                AgentTelemetry.trackLlmCall stateDrained.SessionId stateDrained.UserId stateDrained.TurnIndex "gpt-4o" swLlm.ElapsedMilliseconds response.Content response.ToolCalls.Length (Some stateDrained.SessionId) (Some stateDrained.TurnSpanId)
+
                 // Pipeline Step 2.6: Tool Call Execution Path
                 if response.ToolCalls.Length > 0 then
                     let! nextState = processToolCalls executor registeredNamesSet response.Content response.ToolCalls stateDrained
@@ -353,6 +356,9 @@ module AgentPipeline =
                 // Pipeline Step 2.7: Final Text Response Path
                 else
                     match processTextResponse response.Content stateDrained with
-                    | Exit turnResult -> return turnResult
+                    | Exit turnResult ->
+                        let respText = match turnResult.Outcome with TurnOutcome.Completed txt -> txt | TurnOutcome.Failed (FailureReason.ApiError e) -> e | _ -> ""
+                        AgentTelemetry.trackTurnEnd stateDrained.SessionId stateDrained.UserId stateDrained.TurnIndex 0L respText "completed" (Some stateDrained.SessionId) (Some stateDrained.TurnSpanId)
+                        return turnResult
                     | Continue nextState -> return! runTurnLoop llmCaller executor registeredSchemas registeredNamesSet nextState
         }

@@ -1,5 +1,6 @@
 namespace Skight.AgentPlatform.FSharp
 
+open System
 open System.Collections.Concurrent
 
 module AgentSession =
@@ -20,10 +21,14 @@ module AgentSession =
 
     let beginTurn (config: AgentConfig) (userInput: string) (session: AgentSessionState) : TurnState * AgentSessionState =
         let updatedMessages = session.Messages @ [ UserMessage userInput ]
+        let turnSpanId = Guid.NewGuid().ToString("N")
+        AgentTelemetry.trackTurnStart session.SessionId session.UserId session.TurnIndex userInput (Some session.SessionId) (Some turnSpanId)
+
         let turnState = {
             SessionId = session.SessionId
             UserId = session.UserId
             TurnIndex = session.TurnIndex
+            TurnSpanId = turnSpanId
             Messages = updatedMessages
             ApiCalls = 0
             EmptyContentRetries = 0

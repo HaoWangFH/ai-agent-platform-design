@@ -14,6 +14,9 @@ type TelemetryEventType =
 
 type FSharpTelemetryEvent = {
     EventId: string
+    TraceId: string
+    SpanId: string
+    ParentSpanId: string option
     SessionId: string
     UserId: string
     TurnIndex: int
@@ -45,6 +48,9 @@ module AgentTelemetry =
 
                 let compactObj = {|
                     EventId = evt.EventId
+                    TraceId = evt.TraceId
+                    SpanId = evt.SpanId
+                    ParentSpanId = match evt.ParentSpanId with Some p -> p | None -> null
                     SessionId = evt.SessionId
                     UserId = evt.UserId
                     TurnIndex = evt.TurnIndex
@@ -85,10 +91,15 @@ module AgentTelemetry =
     let flush () =
         agent.PostAndReply(fun reply -> FlushMessage reply)
 
-    let trackTurnStart (sessionId: string) (userId: string) (turnIndex: int) (userInput: string) =
+    let trackTurnStart (sessionId: string) (userId: string) (turnIndex: int) (userInput: string) (traceId: string option) (spanId: string option) =
         if IsEnabled then
+            let tid = defaultArg traceId sessionId
+            let sid = defaultArg spanId (Guid.NewGuid().ToString("N"))
             track {
                 EventId = Guid.NewGuid().ToString("N")
+                TraceId = tid
+                SpanId = sid
+                ParentSpanId = None
                 SessionId = sessionId
                 UserId = userId
                 TurnIndex = turnIndex
@@ -100,10 +111,31 @@ module AgentTelemetry =
                 RawPayload = userInput
             }
 
-    let trackToolExecution (sessionId: string) (userId: string) (turnIndex: int) (toolName: string) (durationMs: int64) (argsJson: string) (result: string) =
+    let trackLlmCall (sessionId: string) (userId: string) (turnIndex: int) (model: string) (durationMs: int64) (responseContent: string) (toolCallsCount: int) (traceId: string option) (parentSpanId: string option) =
         if IsEnabled then
             track {
                 EventId = Guid.NewGuid().ToString("N")
+                TraceId = defaultArg traceId sessionId
+                SpanId = Guid.NewGuid().ToString("N")
+                ParentSpanId = parentSpanId
+                SessionId = sessionId
+                UserId = userId
+                TurnIndex = turnIndex
+                EventType = "LlmCall"
+                Timestamp = DateTime.UtcNow
+                DurationMs = durationMs
+                Name = "llm.call"
+                Payload = sprintf "Model: %s, ResponseLength: %d, ToolCalls: %d" model responseContent.Length toolCallsCount
+                RawPayload = responseContent
+            }
+
+    let trackToolExecution (sessionId: string) (userId: string) (turnIndex: int) (toolName: string) (durationMs: int64) (argsJson: string) (result: string) (traceId: string option) (parentSpanId: string option) =
+        if IsEnabled then
+            track {
+                EventId = Guid.NewGuid().ToString("N")
+                TraceId = defaultArg traceId sessionId
+                SpanId = Guid.NewGuid().ToString("N")
+                ParentSpanId = parentSpanId
                 SessionId = sessionId
                 UserId = userId
                 TurnIndex = turnIndex
@@ -115,10 +147,13 @@ module AgentTelemetry =
                 RawPayload = sprintf "Args: %s\nResult: %s" argsJson result
             }
 
-    let trackTurnEnd (sessionId: string) (userId: string) (turnIndex: int) (durationMs: int64) (finalResponse: string) (exitReason: string) =
+    let trackTurnEnd (sessionId: string) (userId: string) (turnIndex: int) (durationMs: int64) (finalResponse: string) (exitReason: string) (traceId: string option) (spanId: string option) =
         if IsEnabled then
             track {
                 EventId = Guid.NewGuid().ToString("N")
+                TraceId = defaultArg traceId sessionId
+                SpanId = defaultArg spanId (Guid.NewGuid().ToString("N"))
+                ParentSpanId = None
                 SessionId = sessionId
                 UserId = userId
                 TurnIndex = turnIndex

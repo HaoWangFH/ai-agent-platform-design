@@ -26,9 +26,9 @@
     <Compile Include="McpSchemaTranslator.fs" />
     <Compile Include="McpClient.fs" />
     <Compile Include="McpRegistryExtensions.fs" />
+    <Compile Include="Telemetry.fs" />
     <Compile Include="AgentSession.fs" />
     <Compile Include="SdkAdapter.fs" />
-    <Compile Include="Telemetry.fs" />
     <Compile Include="ContextCompressor.fs" />
     <Compile Include="AgentPipeline.fs" />
     <Compile Include="AgentRunner.fs" />

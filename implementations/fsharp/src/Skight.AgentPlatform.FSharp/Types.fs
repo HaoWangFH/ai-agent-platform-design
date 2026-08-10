@@ -99,6 +99,7 @@ type TurnState = {
     SessionId: string
     UserId: string
     TurnIndex: int
+    TurnSpanId: string
     Messages: AgentMessage list
     ApiCalls: int
     EmptyContentRetries: int

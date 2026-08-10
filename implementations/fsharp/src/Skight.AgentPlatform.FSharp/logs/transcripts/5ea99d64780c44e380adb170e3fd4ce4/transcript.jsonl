@@ -1,0 +1,1 @@
+{"DurationMs":0,"EventId":"92fabd0da0694260af39848b719a03af","EventType":"TurnEnd","Name":"agent.turn.end","Payload":"ExitReason: completed, ResponseLength: 2199","SessionId":"5ea99d64780c44e380adb170e3fd4ce4","Timestamp":"2026-08-10T16:49:44.4204678Z","TurnIndex":1,"UserId":"default_user"}

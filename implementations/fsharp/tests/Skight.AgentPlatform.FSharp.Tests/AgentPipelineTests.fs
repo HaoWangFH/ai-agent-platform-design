@@ -9,6 +9,7 @@ module AgentPipelineTests =
         SessionId = "test_session"
         UserId = "test_user"
         TurnIndex = 1
+        TurnSpanId = "test_span"
         Messages = messages
         ApiCalls = 0
         EmptyContentRetries = 0

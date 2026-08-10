@@ -44,11 +44,16 @@ namespace Skight.AgentPlatform
             });
         }
 
-        public static void TrackTurnStart(string sessionId, string userId, int turnIndex, string userInput)
+        public static void TrackTurnStart(string sessionId, string userId, int turnIndex, string userInput, string? traceId = null, string? spanId = null)
         {
             if (!Options.Enabled) return;
+            var tid = traceId ?? sessionId;
+            var sid = spanId ?? Guid.NewGuid().ToString("N");
             Track(new TelemetryEvent
             {
+                TraceId = tid,
+                SpanId = sid,
+                ParentSpanId = null,
                 SessionId = sessionId,
                 UserId = userId,
                 TurnIndex = turnIndex,
@@ -59,11 +64,14 @@ namespace Skight.AgentPlatform
             });
         }
 
-        public static void TrackLlmCall(string sessionId, string userId, int turnIndex, string model, long durationMs, string responseContent, int toolCallsCount)
+        public static void TrackLlmCall(string sessionId, string userId, int turnIndex, string model, long durationMs, string responseContent, int toolCallsCount, string? traceId = null, string? parentSpanId = null)
         {
             if (!Options.Enabled) return;
             Track(new TelemetryEvent
             {
+                TraceId = traceId ?? sessionId,
+                SpanId = Guid.NewGuid().ToString("N"),
+                ParentSpanId = parentSpanId,
                 SessionId = sessionId,
                 UserId = userId,
                 TurnIndex = turnIndex,
@@ -75,11 +83,14 @@ namespace Skight.AgentPlatform
             });
         }
 
-        public static void TrackToolExecution(string sessionId, string userId, int turnIndex, string toolName, long durationMs, string argsJson, string result)
+        public static void TrackToolExecution(string sessionId, string userId, int turnIndex, string toolName, long durationMs, string argsJson, string result, string? traceId = null, string? parentSpanId = null)
         {
             if (!Options.Enabled) return;
             Track(new TelemetryEvent
             {
+                TraceId = traceId ?? sessionId,
+                SpanId = Guid.NewGuid().ToString("N"),
+                ParentSpanId = parentSpanId,
                 SessionId = sessionId,
                 UserId = userId,
                 TurnIndex = turnIndex,
@@ -91,11 +102,14 @@ namespace Skight.AgentPlatform
             });
         }
 
-        public static void TrackTurnEnd(string sessionId, string userId, int turnIndex, long durationMs, string finalResponse, string exitReason)
+        public static void TrackTurnEnd(string sessionId, string userId, int turnIndex, long durationMs, string finalResponse, string exitReason, string? traceId = null, string? spanId = null)
         {
             if (!Options.Enabled) return;
             Track(new TelemetryEvent
             {
+                TraceId = traceId ?? sessionId,
+                SpanId = spanId ?? Guid.NewGuid().ToString("N"),
+                ParentSpanId = null,
                 SessionId = sessionId,
                 UserId = userId,
                 TurnIndex = turnIndex,
@@ -127,6 +141,9 @@ namespace Skight.AgentPlatform
                         var compactJson = JsonSerializer.Serialize(new
                         {
                             evt.EventId,
+                            evt.TraceId,
+                            evt.SpanId,
+                            evt.ParentSpanId,
                             evt.SessionId,
                             evt.UserId,
                             evt.TurnIndex,
