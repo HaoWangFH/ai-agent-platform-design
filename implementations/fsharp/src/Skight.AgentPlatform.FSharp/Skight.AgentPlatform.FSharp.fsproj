@@ -14,6 +14,7 @@
     <Compile Include="TerminalTool.fs" />
     <Compile Include="GitTools.fs" />
     <Compile Include="WebTools.fs" />
+    <Compile Include="MemoryStore.fs" />
     <Compile Include="MemoryTool.fs" />
     <Compile Include="TodoTool.fs" />
     <Compile Include="SystemInfoTool.fs" />
@@ -37,6 +38,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.17" />
     <PackageReference Include="FSharp.Control.TaskSeq" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
   </ItemGroup>
 
 </Project>

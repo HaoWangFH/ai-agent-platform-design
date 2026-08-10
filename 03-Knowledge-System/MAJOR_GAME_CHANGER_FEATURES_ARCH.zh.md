@@ -1,6 +1,6 @@
 # 架构设计说明书：四大颠覆性 AI Agent 战略特性
 
-> **文档版本：** 2.0.0  
+> **文档版本：** 2.1.0  
 > **目标平台：** Skight AI Agent Platform (C# & F#)  
 > **对比对标：** Hermes Agent (`conversation_loop.py`, `delegation_context.py`) 与 Claude Code  
 > **更新时间：** 2026-08-09
@@ -14,7 +14,7 @@
 1. **子 Agent 任务授权 (`delegate_task`)**：支持并发派生具备独立上下文栈的子 Agent 节点。
 2. **代码质量止步门禁 (`pre_verify`)**：修改代码后在产出最终回答前强制拦截并要求跑测试验证。
 3. **API 前置转向注入 (`/steer`)**：在不违反角色交替规则的前提下，实现在线即时转向。
-4. **长效向量记忆与临时注入 (`memory_manager`)**：双层持久化记忆与无污染上下文注入。
+4. **云原生可扩展向量记忆 (`IMemoryStore`)**：支持本地 SQLite FTS5/Vector 与云端 PostgreSQL `pgvector` 多租户部署的双适配器架构。
 
 ---
 
@@ -33,57 +33,10 @@
           └───► 子 Agent 2 (独立 Session, 限制预算=5) ──► 总结文本 ┘
 ```
 
-#### F# 函数签名 (`DelegateTool.fs`)
-```fsharp
-type DelegatedRole = Orchestrator | Leaf
-
-type DelegationTask = {
-    Goal: string
-    Role: DelegatedRole
-    MaxIterations: int option
-}
-
-type SubAgentRunner = DelegationTask -> AgentSessionState -> Async<string * AgentSessionState>
-
-let executeDelegatedTaskAsync (runner: SubAgentRunner) (task: DelegationTask) (parentState: AgentSessionState) : Async<string> =
-    async {
-        let childInitialState = { Messages = [ SystemMessage (sprintf "You are a specialized sub-agent. Goal: %s" task.Goal) ]; PendingCommand = RunTurn }
-        let! summary, _ = runner task childInitialState
-        return summary
-    }
-```
-
-#### C# 类定义 (`DelegateTool.cs`)
-```csharp
-public class DelegationTask
-{
-    public string Goal { get; set; } = string.Empty;
-    public string Role { get; set; } = "leaf";
-    public int MaxIterations { get; set; } = 5;
-}
-
-public static class DelegateTool
-{
-    public static async Task<string> ExecuteDelegateTaskAsync(
-        DelegationTask task,
-        Func<string, AgentSessionState, Task<(string Summary, AgentSessionState Updated)>> childAgentRunner,
-        AgentSessionState parentState)
-    {
-        var childInitial = new AgentSessionState
-        {
-            Messages = new List<ChatRequestMessage> { new ChatRequestSystemMessage($"You are a specialized sub-agent. Goal: {task.Goal}") }
-        };
-        var (summary, _) = await childAgentRunner(task.Goal, childInitial);
-        return summary;
-    }
-}
-```
-
 ---
 
 ### 2. 代码质量止步门禁 (`pre_verify`)
 
-#### 架构数据流
 ```
 [ Agent 准备产出最终回答 Completed ]
           │
@@ -107,7 +60,6 @@ public static class DelegateTool
 
 ### 3. API 前置转向注入 (`/steer`)
 
-#### 架构数据流
 ```
 [ 转向队列 (Steer Queue) ] ──► 清空 pending 转向文本
                                     │
@@ -120,18 +72,52 @@ public static class DelegateTool
 
 ---
 
-### 4. 临时持久化记忆 (`memory_manager`)
+### 4. 云原生可扩展向量记忆 (`IMemoryStore`)
 
-#### 架构数据流
 ```
-[ 持久化存储 (SQLite / 键值库) ]
-                         │
-                         ▼
-   查询相关的 Memory Key/Values 或向量 Embeddings
-                         │
-                         ▼
-   将临时 System 上下文块注入到 API Payload 中 (不保存至会话数据库)
-                         │
-                         ▼
-   LLM API 执行 ──► 卸载临时上下文块
+                                  [ Agent 核心引擎 (F# / C#) ]
+                                              │
+                                              ▼
+                                   [ IMemoryStore 统一抽象 ]
+                                              │
+                    ┌─────────────────────────┴─────────────────────────┐
+                    ▼                                                   ▼
+       【本地 CLI / IDE 插件模式】                              【远程 Web 服务器/云端模式】
+        SqliteMemoryStore                                       PgVectorMemoryStore
+  (零依赖, 单文件 ~/.skight/memory.db)                    (PostgreSQL + pgvector + tsvector)
+```
+
+#### F# 记忆存储签名 (`MemoryStore.fs`)
+```fsharp
+type MemoryQuery = {
+    UserId: string
+    SearchText: string
+    Vector: float32[] option
+    Limit: int
+}
+
+type MemoryRecord = {
+    Key: string
+    Value: string
+    Score: float32
+}
+
+type IMemoryStore =
+    abstract member StoreAsync: userId: string -> key: string -> value: string -> Async<unit>
+    abstract member SearchAsync: query: MemoryQuery -> Async<MemoryRecord list>
+```
+
+#### C# 记忆存储接口 (`IMemoryStore.cs`)
+```csharp
+namespace Skight.AgentPlatform
+{
+    public record MemoryQuery(string UserId, string SearchText, float[]? Vector = null, int Limit = 5);
+    public record MemoryRecord(string Key, string Value, float Score);
+
+    public interface IMemoryStore
+    {
+        Task StoreAsync(string userId, string key, string value);
+        Task<IReadOnlyList<MemoryRecord>> SearchAsync(MemoryQuery query);
+    }
+}
 ```
