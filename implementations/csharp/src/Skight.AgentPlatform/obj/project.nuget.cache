@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "vnYQ/tgXr3s=",
+  "dgSpecHash": "baaNdWf4LYk=",
   "success": true,
   "projectFilePath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj",
   "expectedPackageFiles": [
@@ -16,18 +16,5 @@
     "C:\\Users\\hwang5\\.nuget\\packages\\system.clientmodel\\1.0.0\\system.clientmodel.1.0.0.nupkg.sha512",
     "C:\\Users\\hwang5\\.nuget\\packages\\system.memory.data\\1.0.2\\system.memory.data.1.0.2.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1903",
-      "level": "Warning",
-      "message": "Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q",
-      "projectPath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj",
-      "warningLevel": 1,
-      "filePath": "C:\\Users\\hwang5\\wiki\\projects\\ai-agent-platform-design\\implementations\\csharp\\src\\Skight.AgentPlatform\\Skight.AgentPlatform.csproj",
-      "libraryId": "SQLitePCLRaw.lib.e_sqlite3",
-      "targetGraphs": [
-        "net10.0"
-      ]
-    }
-  ]
+  "logs": []
 }
