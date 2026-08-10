@@ -175,17 +175,23 @@ module AgentPipeline =
 
     let private cleanJsonArgs (argsStr: string) =
         let mutable clean = if String.IsNullOrWhiteSpace argsStr then "{}" else argsStr.Trim()
+
+        let extractBraces () =
+            let braceIndex = clean.IndexOf('{')
+            if braceIndex > 0 then
+                let lastBrace = clean.LastIndexOf('}')
+                if lastBrace > braceIndex then
+                    clean <- clean.Substring(braceIndex, lastBrace - braceIndex + 1)
+
+        extractBraces ()
+
         if clean.StartsWith("\"") && clean.EndsWith("\"") then
             try
                 let unescaped = JsonSerializer.Deserialize<string>(clean)
                 if not (String.IsNullOrWhiteSpace unescaped) then clean <- unescaped.Trim()
             with _ -> ()
 
-        let braceIndex = clean.IndexOf('{')
-        if braceIndex > 0 then
-            let lastBrace = clean.LastIndexOf('}')
-            if lastBrace > braceIndex then
-                clean <- clean.Substring(braceIndex, lastBrace - braceIndex + 1)
+        extractBraces ()
 
         if not (clean.StartsWith("{")) then
             let rawString = clean.Trim('"')

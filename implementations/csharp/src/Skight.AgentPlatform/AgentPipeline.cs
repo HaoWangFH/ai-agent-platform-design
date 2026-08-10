@@ -257,18 +257,7 @@ namespace Skight.AgentPlatform
             if (string.IsNullOrWhiteSpace(rawArgs)) return "{}";
             string clean = rawArgs.Trim();
 
-            // 1. Unescape double-encoded JSON strings
-            if (clean.StartsWith("\"") && clean.EndsWith("\""))
-            {
-                try
-                {
-                    var unescaped = JsonSerializer.Deserialize<string>(clean);
-                    if (!string.IsNullOrWhiteSpace(unescaped)) clean = unescaped.Trim();
-                }
-                catch { }
-            }
-
-            // 2. Extract JSON object if concatenated with leading tokens (e.g. "types.fs" {"path":"types.fs"})
+            // 1. Extract JSON object if concatenated with leading tokens (e.g. "types.fs" {"path":"types.fs"})
             int braceIndex = clean.IndexOf('{');
             if (braceIndex > 0)
             {
@@ -279,7 +268,29 @@ namespace Skight.AgentPlatform
                 }
             }
 
-            // 3. If clean is a raw unquoted string or file path without braces (e.g. "types.fs")
+            // 2. Unescape double-encoded JSON strings
+            if (clean.StartsWith("\"") && clean.EndsWith("\""))
+            {
+                try
+                {
+                    var unescaped = JsonSerializer.Deserialize<string>(clean);
+                    if (!string.IsNullOrWhiteSpace(unescaped)) clean = unescaped.Trim();
+                }
+                catch { }
+            }
+
+            // 3. Re-check brace extraction after unescaping
+            braceIndex = clean.IndexOf('{');
+            if (braceIndex > 0)
+            {
+                int lastBrace = clean.LastIndexOf('}');
+                if (lastBrace > braceIndex)
+                {
+                    clean = clean.Substring(braceIndex, lastBrace - braceIndex + 1);
+                }
+            }
+
+            // 4. If clean is a raw unquoted string or file path without braces (e.g. "types.fs")
             if (!clean.StartsWith("{"))
             {
                 var rawString = clean.Trim('"');
