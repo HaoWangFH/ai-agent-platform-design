@@ -19,9 +19,18 @@ namespace Skight.AgentPlatform
     {
         private readonly SqliteConnection _connection;
 
+        private static string FormatConnectionString(string connStr)
+        {
+            if (string.IsNullOrWhiteSpace(connStr))
+                return "Data Source=agent_memory.db";
+            if (!connStr.Contains("="))
+                return $"Data Source={connStr}";
+            return connStr;
+        }
+
         public SqliteMemoryStore(string connectionString)
         {
-            _connection = new SqliteConnection(connectionString);
+            _connection = new SqliteConnection(FormatConnectionString(connectionString));
             _connection.Open();
             InitDb();
         }

@@ -25,7 +25,8 @@ type IMemoryStore =
 module MemoryStoreFactory =
 
     type SqliteMemoryStore(connectionString: string) =
-        let conn = new SqliteConnection(connectionString)
+        let connStr = if connectionString.Contains("=") then connectionString else sprintf "Data Source=%s" connectionString
+        let conn = new SqliteConnection(connStr)
         do conn.Open()
 
         let initDb () =
