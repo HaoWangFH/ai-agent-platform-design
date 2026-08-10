@@ -1,27 +1,31 @@
 # Antigravity Global Rules for AI-EOS
 
-You are operating within the AI-Engineering-Platform (AI-EOS). Your primary role is to act across the 7 SDLC Phases (Phase 1 Analysis to Phase 7 Knowledge Capture).
+You are operating within the AI-Engineering-Platform (`Skight.AgentPlatform`). Your primary role is to act across all 7 SDLC Phases (Phase 1 Analysis to Phase 7 Knowledge Capture).
 
-## 1. Context Awareness
-Before making architectural suggestions or generating code, you MUST always check if existing design documents cover the topic:
-- `03-Analysis/` for requirements, gap analysis, and benchmark research.
-- `04-Architecture/` for high-level loop and interaction designs.
-- `05-Specification-Driven-Development/` for strict BDD behaviors.
-- `09-Standards/` for language-specific rules.
+## 1. Context Awareness & Phase Navigation
+Before making architectural suggestions or generating code, you MUST inspect existing phase documents:
+- **Phase 1 (Analyze)**: `03-Analysis/` for requirements, gap analysis, and benchmark research.
+- **Phase 2 (Design)**: `04-Architecture/` for high-level loop architecture and interaction designs.
+- **Phase 3 (Specification)**: `05-Specification-Driven-Development/` for strict BDD behaviors and acceptance criteria.
+- **Phase 4 (Planning)**: `06-Tasks/` for master task backlog, sprint planning, and task tracking.
+- **Phase 5 (Implement)**: `implementations/` for C# (`implementations/csharp/`) and F# (`implementations/fsharp/`) code construction.
+- **Phase 6 (Verify)**: `07-Testing/` for automated test suites (Expecto, xUnit) and quality stop gates (`pre_verify`).
+- **Phase 7 (Knowledge Capture)**: `08-Knowledge-System/` for post-implementation domain knowledge and terminology.
+- **Standards & Infrastructure**: `09-Standards/` for coding conventions, `10-Skill-Library/`, `11-Prompt-Library/`, and `15-Cloud-Infrastructure/` for deployment.
 
 ## 2. No Code Without Specification
-If the user asks you to implement a new feature in C# or F#, you should first output the Specification (BDD) in `05-Specification-Driven-Development/` and have the user agree to it. Only write the code in `implementations/` after the specification is approved.
+If the user asks you to implement a new feature in C# or F#, you should first output the Specification (BDD) in `05-Specification-Driven-Development/` and have the user agree to it. Only write code in `implementations/` after the specification is approved.
 
-## 3. Language Separation
+## 3. Dual-Language Architecture & Parity
 Keep architecture completely distinct from implementation:
 - If asked an architecture question, update markdown files in `04-Architecture/`.
 - If a decision is made, create an ADR in `04-Architecture/ADR-XXX.md` using the ADR template.
-- F# and C# are dual-implementations of the SAME architecture. Ensure both are treated with parity.
+- F# and C# are dual-implementations of the SAME architecture. Ensure both languages maintain feature parity.
 
-## 4. Documentation First
-If you solve a complex bug or figure out a new workflow, you must capture that knowledge in Phase 7 by updating the relevant documentation in `08-Knowledge-System/` or adding a reusable prompt to `11-Prompt-Library/`.
+## 4. Documentation First & Knowledge Capture
+If you solve a complex bug or figure out a new workflow, capture that knowledge in Phase 7 by updating the relevant documentation in `08-Knowledge-System/` or adding a reusable prompt to `11-Prompt-Library/`.
 
-## 5. Bilingual Documentation
+## 5. Bilingual Documentation Rule
 When generating or updating documentation, you MUST ALWAYS generate two versions:
 - An English version (using standard `.md` naming).
 - A Chinese version (using a `.zh.md` suffix).
