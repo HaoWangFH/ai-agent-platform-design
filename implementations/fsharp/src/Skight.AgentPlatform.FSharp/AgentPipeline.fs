@@ -142,25 +142,9 @@ module AgentPipeline =
     let prepareApiMessages (msgs: AgentMessage list) : AgentMessage list =
         msgs |> List.map id
 
-    /// Step 2.3: Context Window Protection (Pure Pipeline Transformation)
+    /// Step 2.3: Context Window Protection & Compaction Engine (Pure Pipeline Transformation)
     let compressContextIfNeeded (limit: int) (msgs: AgentMessage list) : AgentMessage list =
-        if msgs.Length <= limit then
-            msgs
-        else
-            printfn "  [Context Window Protection] History size (%d) > limit (%d). Trimming middle history..." msgs.Length limit
-            let systemPrompt = msgs.Head
-            let recentCount = limit - 3
-            let recentMessages =
-                msgs
-                |> List.skip (msgs.Length - recentCount)
-                |> List.skipWhile (function | ToolMessage _ -> true | _ -> false)
-
-            let summaryMsg =
-                SystemMessage (
-                    sprintf "[System: Previous conversation history was trimmed to fit context window. %d earlier messages summarized.]" (msgs.Length - recentMessages.Length - 1)
-                )
-
-            systemPrompt :: summaryMsg :: recentMessages
+        ContextCompressor.compress 0.80 limit msgs
 
     /// Pipeline composition for message payload preparation
     let preparePayload (limit: int) (msgs: AgentMessage list) : AgentMessage list =

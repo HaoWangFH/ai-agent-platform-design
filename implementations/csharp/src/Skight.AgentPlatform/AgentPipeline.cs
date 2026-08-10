@@ -39,26 +39,7 @@ namespace Skight.AgentPlatform
 
         private List<ChatRequestMessage> CompressContextIfNeeded(List<ChatRequestMessage> msgs, int contextWindowLimit)
         {
-            if (msgs.Count <= contextWindowLimit) return msgs;
-
-            Console.WriteLine($"  [Context Window Protection] History size ({msgs.Count}) > limit ({contextWindowLimit}). Trimming middle history...");
-
-            var systemPrompt = msgs[0];
-            int recentCount = contextWindowLimit - 3;
-            var recentMessages = msgs.Skip(msgs.Count - recentCount).ToList();
-
-            while (recentMessages.Count > 0 && recentMessages[0] is ChatRequestToolMessage)
-            {
-                recentMessages.RemoveAt(0);
-            }
-
-            var summaryMsg = new ChatRequestSystemMessage(
-                $"[System: Previous conversation history was trimmed to fit context window. {msgs.Count - recentMessages.Count - 1} earlier messages summarized.]"
-            );
-
-            var result = new List<ChatRequestMessage> { systemPrompt, summaryMsg };
-            result.AddRange(recentMessages);
-            return result;
+            return ContextCompressor.Compress(0.80, contextWindowLimit, msgs);
         }
 
         public async Task<TurnResult> RunTurnLoopAsync(AgentSessionState session, AgentConfig config, Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>>? customLlmCaller = null)

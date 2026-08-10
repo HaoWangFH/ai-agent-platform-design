@@ -2,7 +2,7 @@
 
 > **Target Implementations:** `Skight.AgentPlatform` (C#) & `Skight.AgentPlatform.FSharp` (F#)  
 > **Status:** Active Implementation  
-> **Last Updated:** 2026-08-09
+> **Last Updated:** 2026-08-10
 
 ---
 
@@ -19,22 +19,24 @@
 - [x] **2.2 SQLite Embedded Adapter**: Implemented `SqliteMemoryStore` with multi-tenant `UserId` isolation.
 - [x] **2.3 Unit & BDD Test Suites**: Added `MemoryStoreSpecs.fs` (Expecto) and `MemoryStoreTests.cs` (xUnit). All tests passed!
 
-### Task 3: Pre-Verify Code Quality Stop Gate (`pre_verify`) - NEXT
-- [ ] **3.1 File Mutation Tracker**: Track dirty file states in `AgentSessionState`.
-- [ ] **3.2 Interceptor Gate**: Intercept `TurnOutcome.Completed` if files were modified without test execution.
-- [ ] **3.3 BDD Spec Tests**: Implement verification gate tests in C# and F#.
+### Task 3: Pre-Verify Code Quality Stop Gate (`pre_verify`) - COMPLETED
+- [x] **3.1 File Mutation Tracker**: Track dirty file states in `AgentSessionState` & `TurnState`.
+- [x] **3.2 Interceptor Gate**: Intercept `TurnOutcome.Completed` if files were modified without test execution (`max_nudges = 2`).
+- [x] **3.3 Unit & BDD Test Suites**: Added `PreVerifySpecs.fs` (Expecto) and `PreVerifyTests.cs` (xUnit). All tests passed!
 
-### Task 4: Pre-API Steering Drain (`/steer`)
-- [ ] **4.1 Steering Queue**: Drain pending steer text before building API payload.
-- [ ] **4.2 Tool Output Piggyback**: Append steer text to last tool output to preserve role alternation.
+### Task 4: Pre-API Steering Drain (`/steer`) - COMPLETED
+- [x] **4.1 Steering Queue**: Drain pending steer text before building API payload (`ConcurrentQueue<string>`).
+- [x] **4.2 Tool Output Piggyback**: Append steer text to last tool output to preserve role alternation (`user -> assistant -> tool -> user`).
+- [x] **4.3 Unit & BDD Test Suites**: Added `SteeringSpecs.fs` (Expecto) and `SteeringTests.cs` (xUnit). All tests passed!
 
 ---
 
 ## 📌 Phase 2: Advanced Enterprise Capabilities (Extended Roadmap)
 
-### Task 5: Context Compaction Engine (`context_compressor`)
-- [ ] **5.1 Token Monitor**: Monitor payload size against token limits.
-- [ ] **5.2 Turn Summary Pruner**: Compress older tool outputs into `TurnSummary`.
+### Task 5: Context Compaction Engine (`context_compressor`) - COMPLETED
+- [x] **5.1 Token Budget Monitor**: Automatically detect when conversation length exceeds 80% of `ContextWindowLimit`.
+- [x] **5.2 Turn Summary Pruner**: Compact older conversation history into `TurnSummary` system message while preserving system prompt and recent context.
+- [x] **5.3 Unit & BDD Test Suites**: Added `ContextCompressorSpecs.fs` (Expecto) and `ContextCompressorTests.cs` (xUnit). All tests passed!
 
 ### Task 6: Interactive Clarification Gateway (`clarify_tool`)
 - [ ] **6.1 Structured Choice Tool**: Implement `clarify_tool` schema for interactive decision prompts.

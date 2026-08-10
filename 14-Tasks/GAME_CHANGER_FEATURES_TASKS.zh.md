@@ -2,7 +2,7 @@
 
 > **目标实现：** `Skight.AgentPlatform` (C#) 与 `Skight.AgentPlatform.FSharp` (F#)  
 > **状态：** 正在进行实现  
-> **更新时间：** 2026-08-09
+> **更新时间：** 2026-08-10
 
 ---
 
@@ -19,25 +19,27 @@
 - [x] **2.2 SQLite 嵌入式适配器**：实现具备 `UserId` 多租户隔离的 `SqliteMemoryStore`。
 - [x] **2.3 单元与 BDD 测试套件**：添加 `MemoryStoreSpecs.fs` (Expecto) 与 `MemoryStoreTests.cs` (xUnit)。全部测试通过！
 
-### 任务 3：代码质量止步门禁 (`pre_verify`) - 【下一步】
-- [ ] **3.1 文件变更追踪器**：在 `AgentSessionState` 中追踪 Dirty 文件变更状态。
-- [ ] **3.2 拦截门禁**：如果文件已修改但未执行测试，拦截 `TurnOutcome.Completed`。
-- [ ] **3.3 BDD 规范测试**：在 C# 和 F# 中实现验证门禁测试。
+### 任务 3：代码质量止步门禁 (`pre_verify`) - 【已完成】
+- [x] **3.1 文件变更追踪器**：在 `AgentSessionState` 与 `TurnState` 中追踪 Dirty 文件变更状态。
+- [x] **3.2 拦截门禁**：如果文件已修改但未执行测试，拦截 `TurnOutcome.Completed`（最大 Nudge 尝试次数 = 2）。
+- [x] **3.3 单元与 BDD 测试套件**：添加 `PreVerifySpecs.fs` (Expecto) 与 `PreVerifyTests.cs` (xUnit)。全部测试通过！
 
-### 任务 4：API 前置转向注入 (`/steer`)
-- [ ] **4.1 转向队列**：在构建 API Payload 前清空待处理转向文本。
-- [ ] **4.2 Tool 输出搭载**：将转向文本追加到最后一个 Tool 输出，维护角色交替规则。
+### 任务 4：API 前置转向注入 (`/steer`) - 【已完成】
+- [x] **4.1 转向队列**：在构建 API Payload 前清空待处理转向文本 (`ConcurrentQueue<string>`)。
+- [x] **4.2 Tool 输出搭载**：将转向文本追加到最后一个 Tool 输出，维护角色交替规则 (`user -> assistant -> tool -> user`)。
+- [x] **4.3 单元与 BDD 测试套件**：添加 `SteeringSpecs.fs` (Expecto) 与 `SteeringTests.cs` (xUnit)。全部测试通过！
 
 ---
 
 ## 📌 第二阶段：高级企业级生态扩展特性 (演进路线图)
 
-### 任务 5：上下文自动压缩引擎 (`context_compressor`)
-- [ ] **5.1 Token 监控器**：监控对话 Payload 大小是否逼近窗口限制。
-- [ ] **5.2 轮次总结剪枝**：将早期工具输出压缩为 `TurnSummary`。
+### 任务 5：上下文自动压缩引擎 (`context_compressor`) - 【已完成】
+- [x] **5.1 Token 预算监控**：自动检测对话长度是否超出 `ContextWindowLimit` 的 80% 阈值。
+- [x] **5.2 轮次总结剪枝**：将早期对话历史压缩为 `TurnSummary` 系统消息，同时保留 System Prompt 和近期上下文。
+- [x] **5.3 单元与 BDD 测试套件**：添加 `ContextCompressorSpecs.fs` (Expecto) 与 `ContextCompressorTests.cs` (xUnit)。全部测试通过！
 
 ### 任务 6：交互式对齐网关 (`clarify_tool`)
 - [ ] **6.1 结构化问答工具**：实现 `clarify_tool` Schema 以支持交互式选择题弹窗。
 
-### 任务 7：后台 Cron 与定时调度器 (`cronjob_tools`)
-- [ ] **7.1 单次与 Cron 定时器**：实现具备被动触发 Agent 唤醒的后台任务调度器。
+### Task 7: Background Cron & Scheduler (`cronjob_tools`)
+- [ ] **7.1 One-Shot & Cron Timers**: Background task scheduler with reactive agent wakeups.

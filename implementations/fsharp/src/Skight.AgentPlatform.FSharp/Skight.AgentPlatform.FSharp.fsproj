@@ -28,6 +28,7 @@
     <Compile Include="McpRegistryExtensions.fs" />
     <Compile Include="AgentSession.fs" />
     <Compile Include="SdkAdapter.fs" />
+    <Compile Include="ContextCompressor.fs" />
     <Compile Include="AgentPipeline.fs" />
     <Compile Include="AgentRunner.fs" />
     <Compile Include="DelegateTool.fs" />
