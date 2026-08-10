@@ -15,6 +15,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\..\03-Analysis\**\*.md" Link="03-Analysis\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\03-Analysis\**\*.zh.md" Link="03-Analysis\%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="..\..\03-Knowledge-System\**\*.md" Link="03-Knowledge-System\%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="..\..\03-Knowledge-System\**\*.zh.md" Link="03-Knowledge-System\%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="..\..\07-Architecture\**\*.md" Link="07-Architecture\%(RecursiveDir)%(Filename)%(Extension)" />

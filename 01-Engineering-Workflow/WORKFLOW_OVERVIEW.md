@@ -1,28 +1,26 @@
-# AI Agent Platform Engineering Workflow Overview
+# AI Agent Platform Engineering Workflow & SDLC Lifecycle Guide
 
-This document outlines how the AI Agent Platform (C# & F#) maps to the full-lifecycle engineering methodology of AI-EOS.
+This document outlines how the AI Agent Platform (`Skight.AgentPlatform`) structures and tracks every phase of the **Software Development Life Cycle (SDLC)**.
 
-## Phase Responsibilities
+---
 
-1. **03-Knowledge-System (Knowledge Base & Requirements)**
-   - Stores original analysis reports, such as `HERMES_PARITY_REPORT.md`.
-   - This is the starting point for business logic, used to provide background context to the LLM and analyze the gap between our current capabilities and existing systems (e.g., Hermes).
+## 🔄 SDLC Lifecycle Phase Mapping
 
-2. **07-Architecture (Architecture & Design)**
-   - Stores high-level system designs translated from requirements, including multi-turn interaction flows and core loop conditions.
-   - Contains all architecture files migrated from the original `docs/`:
-     - `CONVERSATION_LOOP_WORKFLOW.md` (Conversation lifecycle)
-     - `ITERATION_LOOP_DESIGN.md` (Core 5-layer architecture loop design)
-     - `MULTI_TURN_TOOL_WORKFLOW.md` (Multi-turn tool execution workflow)
-     - `HERMES_LOOP_CONDITIONS.md` (Boundary condition logic)
+| Phase | SDLC Stage | Dedicated Directory | Primary Responsibilities & Artifacts |
+| :--- | :--- | :--- | :--- |
+| **Phase 1: Analyze** | Requirements & Gap Analysis | [`03-Analysis/`](../03-Analysis/) | Benchmark framework comparisons (`HERMES_CLAUDE_CODE_ANALYSIS.md`), gap analysis (`HERMES_PARITY_REPORT.md`), boundary condition research (`HERMES_LOOP_CONDITIONS.md`). |
+| **Phase 2: Design** | System & Architectural Design | [`07-Architecture/`](../07-Architecture/) | High-level system architecture, 5-layer loop design (`ITERATION_LOOP_DESIGN.md`), multi-turn workflows (`CONVERSATION_LOOP_WORKFLOW.md`), game-changer feature design (`MAJOR_GAME_CHANGER_FEATURES_ARCH.md`). |
+| **Phase 3: Specification** | BDD Specs & Acceptance Criteria | [`08-Specification-Driven-Development/`](../08-Specification-Driven-Development/) | Testable behavior-driven specs (`GAME_CHANGER_FEATURES_SPECS.md`, `AGENT_LOOP_BDD_SPECS.md`) acting as the contract between design and code. |
+| **Phase 4: Planning** | Task Backlog & Sprint Tracking | [`14-Tasks/`](../14-Tasks/) | Master task backlog, active sprint items, completion progress (`GAME_CHANGER_FEATURES_TASKS.md`). |
+| **Phase 5: Implement** | Code Construction | [`implementations/`](../implementations/) | C# core library & WebAPI/gRPC server wrapper (`implementations/csharp/`), F# core library (`implementations/fsharp/`). |
+| **Phase 6: Verify** | Testing & Quality Control Gates | [`09-Testing/`](../09-Testing/) | Automated test suites (Expecto 60/60, xUnit 20/20), quality stop gates (`pre_verify`), continuous integration scripts. |
+| **Phase 7: Knowledge** | Knowledge Base & Domain Capture | [`03-Knowledge-System/`](../03-Knowledge-System/) | Domain terminology dictionary, platform sitemap, post-implementation operational knowledge capture (`KNOWLEDGE_INDEX.md`). |
 
-3. **08-Specification-Driven-Development (SDD)**
-   - Stores testable specifications (BDD / Acceptance Criteria). For example, `AGENT_LOOP_BDD_SPECS.md` derived from the `ITERATION_LOOP_DESIGN`.
-   - This layer acts as a bridge between Implementation and Verification, allowing tests to be automated.
+---
 
-4. **13-Agent-Framework**
-   - Dedicated to specific Agent capability specifications. As the project expands, if generic Agent interfaces or base classes are extracted, they can be documented here.
-   
-5. **implementations/ (Code Implementation)**
-   - Contains C# and F# implementations (Phase 5), built directly according to Phase 07 and 08 documents.
-   - Language-specific feature designs (e.g., F# functional porting) are placed in `07-Architecture/fsharp/`, while pure code remains in their respective source repositories.
+## 🛠️ Supporting Engineering Resources
+
+- **`00-Getting-Started/`**: Developer onboarding & environment setup.
+- **`01-Engineering-Workflow/`**: Workflow methodology and phase guidelines.
+- **`04-Skill-Library/` & `05-Prompt-Library/`**: Reusable agent skills and system prompts.
+- **`06-Standards/`**: Coding standards, F# porting guidelines, and commit conventions.
