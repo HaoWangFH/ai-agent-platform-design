@@ -1,6 +1,11 @@
 .env
+bin/
+obj/
 **/bin/
 **/obj/
+logs/
+**/logs/
+*.log
 node_modules/
 package-lock.json
 __pycache__/
