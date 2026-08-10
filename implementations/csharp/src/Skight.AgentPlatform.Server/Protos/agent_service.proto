@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+option csharp_namespace = "Skight.AgentPlatform.Server.Protos";
+
+package agent;
+
+service AgentService {
+  rpc ExecuteTurn (TurnRequest) returns (TurnResponse);
+  rpc SteerTurn (SteerRequest) returns (SteerResponse);
+  rpc QueryMemory (MemoryQueryRequest) returns (MemoryQueryResponse);
+  rpc SaveMemory (MemorySaveRequest) returns (MemorySaveResponse);
+}
+
+message TurnRequest {
+  string user_id = 1;
+  string session_id = 2;
+  string user_input = 3;
+}
+
+message TurnResponse {
+  string final_response = 1;
+  int32 api_calls = 2;
+  bool completed = 3;
+  string exit_reason = 4;
+}
+
+message SteerRequest {
+  string user_id = 1;
+  string session_id = 2;
+  string steering_text = 3;
+}
+
+message SteerResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message MemoryQueryRequest {
+  string user_id = 1;
+  string query = 2;
+  int32 top_k = 3;
+}
+
+message MemoryItem {
+  string key = 1;
+  string value = 2;
+  double score = 3;
+}
+
+message MemoryQueryResponse {
+  repeated MemoryItem items = 1;
+}
+
+message MemorySaveRequest {
+  string user_id = 1;
+  string key = 2;
+  string value = 3;
+}
+
+message MemorySaveResponse {
+  bool success = 1;
+}
