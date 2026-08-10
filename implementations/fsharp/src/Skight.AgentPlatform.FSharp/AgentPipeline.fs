@@ -254,7 +254,6 @@ module AgentPipeline =
                 let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []); nudgeMsg ]
                 Continue { state with Messages = updatedHistory; PreVerifyNudges = state.PreVerifyNudges + 1 }
             else
-                printfn "Assistant: %s" finalText
                 let updatedHistory = state.Messages @ [ AssistantMessage(finalText, []) ]
                 Exit {
                     Outcome = TurnOutcome.Completed finalText

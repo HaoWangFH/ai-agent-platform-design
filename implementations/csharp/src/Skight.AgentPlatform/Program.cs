@@ -149,7 +149,11 @@ namespace Skight.AgentPlatform
 
                 try
                 {
-                    await agent.RunAsync(input);
+                    var result = await agent.RunAsync(input);
+                    if (!string.IsNullOrWhiteSpace(result.FinalResponse))
+                    {
+                        Console.WriteLine($"Assistant: {result.FinalResponse}");
+                    }
                 }
                 catch (Exception ex)
                 {

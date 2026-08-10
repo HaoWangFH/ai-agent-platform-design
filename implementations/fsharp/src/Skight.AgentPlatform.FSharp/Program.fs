@@ -252,7 +252,7 @@ module Program =
                                     match chunk with
                                     | TextDelta text when not (String.IsNullOrEmpty(text)) ->
                                         if not hasPrintedText then
-                                            printf "Assistant (stream): "
+                                            printf "Assistant: "
                                             hasPrintedText <- true
                                         printf "%s" text
                                     | StreamCompleted _ when hasPrintedText ->
@@ -262,8 +262,11 @@ module Program =
                                 agent.RunPureStreamingAsync(trimmed, session, onChunk)
                                 |> Async.RunSynchronously
                             else
-                                agent.RunPureAsync(trimmed, session)
-                                |> Async.RunSynchronously
+                                let res, nextSess =
+                                    agent.RunPureAsync(trimmed, session)
+                                    |> Async.RunSynchronously
+                                printfn "Assistant: %s" res.FinalResponse
+                                res, nextSess
 
                         match result.Outcome with
                         | TurnOutcome.Failed reason when isMockMode ->

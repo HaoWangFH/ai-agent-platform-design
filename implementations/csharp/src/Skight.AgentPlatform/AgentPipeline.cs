@@ -209,9 +209,7 @@ namespace Skight.AgentPlatform
                     continue;
                 }
 
-                Console.WriteLine($"Assistant: {finalText}");
                 session.Messages.Add(new ChatRequestAssistantMessage(finalText));
-
                 return new TurnResult { FinalResponse = finalText, Messages = session.Messages, ApiCalls = apiCalls, Completed = true, ExitReason = "text_response" };
             }
 
