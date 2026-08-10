@@ -83,6 +83,7 @@ public static class DelegateTool
 
 ### 2. 代码质量止步门禁 (`pre_verify`)
 
+#### 架构数据流
 ```
 [ Agent 准备产出最终回答 Completed ]
           │
@@ -100,4 +101,37 @@ public static class DelegateTool
           │
           ▼
    继续下一次 Loop 迭代 (Continue)
+```
+
+---
+
+### 3. API 前置转向注入 (`/steer`)
+
+#### 架构数据流
+```
+[ 转向队列 (Steer Queue) ] ──► 清空 pending 转向文本
+                                    │
+                                    ▼
+   倒序扫描历史消息，查找最后一个 role = "tool" 的消息
+                                    │
+                                    ├─► 存在: 追加标记 "[User Steering]: <text>" 到该 Tool 输出末尾
+                                    └─► 不存在: 保持挂起等待下一批 Tool 输出 (维护角色交替规则)
+```
+
+---
+
+### 4. 临时持久化记忆 (`memory_manager`)
+
+#### 架构数据流
+```
+[ 持久化存储 (SQLite / 键值库) ]
+                         │
+                         ▼
+   查询相关的 Memory Key/Values 或向量 Embeddings
+                         │
+                         ▼
+   将临时 System 上下文块注入到 API Payload 中 (不保存至会话数据库)
+                         │
+                         ▼
+   LLM API 执行 ──► 卸载临时上下文块
 ```
