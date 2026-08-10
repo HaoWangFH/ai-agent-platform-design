@@ -265,7 +265,9 @@ module Program =
                                 let res, nextSess =
                                     agent.RunPureAsync(trimmed, session)
                                     |> Async.RunSynchronously
-                                printfn "Assistant: %s" res.FinalResponse
+                                match res.Outcome with
+                                | TurnOutcome.Completed text -> printfn "Assistant: %s" text
+                                | _ -> ()
                                 res, nextSess
 
                         match result.Outcome with
