@@ -37,9 +37,6 @@
           }
         },
         "warningProperties": {
-          "noWarn": [
-            "NU1903"
-          ],
           "warnAsError": [
             "NU1605"
           ]
@@ -63,6 +60,10 @@
             "Microsoft.Data.Sqlite": {
               "target": "Package",
               "version": "[10.0.10, )"
+            },
+            "SQLitePCLRaw.lib.e_sqlite3": {
+              "target": "Package",
+              "version": "[3.50.3, )"
             }
           },
           "imports": [
