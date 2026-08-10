@@ -31,6 +31,7 @@
     <Compile Include="ContextCompressor.fs" />
     <Compile Include="AgentPipeline.fs" />
     <Compile Include="AgentRunner.fs" />
+    <Compile Include="ClarifyTool.fs" />
     <Compile Include="DelegateTool.fs" />
     <Compile Include="Agent.fs" />
     <Compile Include="Program.fs" />

@@ -38,8 +38,10 @@
 - [x] **5.2 Turn Summary Pruner**: Compact older conversation history into `TurnSummary` system message while preserving system prompt and recent context.
 - [x] **5.3 Unit & BDD Test Suites**: Added `ContextCompressorSpecs.fs` (Expecto) and `ContextCompressorTests.cs` (xUnit). All tests passed!
 
-### Task 6: Interactive Clarification Gateway (`clarify_tool`)
-- [ ] **6.1 Structured Choice Tool**: Implement `clarify_tool` schema for interactive decision prompts.
+### Task 6: Interactive Clarification Gateway (`clarify_tool`) - COMPLETED
+- [x] **6.1 Structured Choice Tool**: Implemented `clarify_tool` schema for interactive decision prompts (`question`, `options`, `is_multi_select`).
+- [x] **6.2 Non-Interactive Fallback**: Built automatic default choice fallback for non-interactive / headless agent execution environments.
+- [x] **6.3 Unit & BDD Test Suites**: Added `ClarifyToolSpecs.fs` (Expecto) and `ClarifyToolTests.cs` (xUnit). All tests passed!
 
 ### Task 7: Background Cron & Scheduler (`cronjob_tools`)
 - [ ] **7.1 One-Shot & Cron Timers**: Background task scheduler with reactive agent wakeups.

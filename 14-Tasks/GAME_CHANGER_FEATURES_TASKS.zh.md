@@ -38,8 +38,10 @@
 - [x] **5.2 轮次总结剪枝**：将早期对话历史压缩为 `TurnSummary` 系统消息，同时保留 System Prompt 和近期上下文。
 - [x] **5.3 单元与 BDD 测试套件**：添加 `ContextCompressorSpecs.fs` (Expecto) 与 `ContextCompressorTests.cs` (xUnit)。全部测试通过！
 
-### 任务 6：交互式对齐网关 (`clarify_tool`)
-- [ ] **6.1 结构化问答工具**：实现 `clarify_tool` Schema 以支持交互式选择题弹窗。
+### 任务 6：交互式对齐网关 (`clarify_tool`) - 【已完成】
+- [x] **6.1 结构化问答工具**：实现 `clarify_tool` Schema 以支持交互式选择题弹窗 (`question`, `options`, `is_multi_select`)。
+- [x] **6.2 无人值守降级**：实现非交互/无头模式下的自动默认选项降级逻辑。
+- [x] **6.3 单元与 BDD 测试套件**：添加 `ClarifyToolSpecs.fs` (Expecto) 与 `ClarifyToolTests.cs` (xUnit)。全部测试通过！
 
 ### Task 7: Background Cron & Scheduler (`cronjob_tools`)
 - [ ] **7.1 One-Shot & Cron Timers**: Background task scheduler with reactive agent wakeups.
