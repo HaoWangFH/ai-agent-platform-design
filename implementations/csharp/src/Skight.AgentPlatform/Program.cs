@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Text.Json;
+using Azure.AI.OpenAI;
 
 namespace Skight.AgentPlatform
 {
@@ -98,10 +99,24 @@ namespace Skight.AgentPlatform
                 jwtToken = await GetEntraIdTokenAsync(tenantId, clientId, clientSecret, audienceId);
             }
 
-            if (string.IsNullOrEmpty(apiKey))
+            Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>>? mockLlmCaller = null;
+            if (string.IsNullOrEmpty(apiKey) || apiKey == "dummy_key_to_allow_initialization")
             {
-                Console.WriteLine("Warning: API Key not set.");
+                Console.WriteLine("⚠️ Warning: No OPENAI_API_KEY or AZURE_API_KEY found in environment or .env file.");
+                Console.WriteLine("   Running in Offline Mock Mode for local testing.\n");
                 apiKey = "dummy_key_to_allow_initialization";
+
+                mockLlmCaller = (tools, messages) =>
+                {
+                    var responseMsg = AzureOpenAIModelFactory.ChatResponseMessage(ChatRole.Assistant, "I am operating in offline mock mode (no API key configured).", null);
+                    var choice = AzureOpenAIModelFactory.ChatChoice(message: responseMsg, index: 0, finishReason: CompletionsFinishReason.Stopped, logProbabilityInfo: null, contentFilterResults: null);
+                    var completions = AzureOpenAIModelFactory.ChatCompletions(
+                        id: "mock_id",
+                        created: DateTimeOffset.UtcNow,
+                        choices: new[] { choice }
+                    );
+                    return Task.FromResult(completions);
+                };
             }
 
             Console.WriteLine($"Initializing C# Agent (Model: {model})...");
@@ -149,7 +164,7 @@ namespace Skight.AgentPlatform
 
                 try
                 {
-                    var result = await agent.RunAsync(input);
+                    var result = await agent.RunAsync(input, mockLlmCaller);
                     if (!string.IsNullOrWhiteSpace(result.FinalResponse))
                     {
                         Console.WriteLine($"Assistant: {result.FinalResponse}");
