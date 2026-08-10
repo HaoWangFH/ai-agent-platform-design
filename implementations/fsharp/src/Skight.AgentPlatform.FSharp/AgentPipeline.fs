@@ -174,13 +174,25 @@ module AgentPipeline =
         }
 
     let private cleanJsonArgs (argsStr: string) =
-        let trimmed = if String.IsNullOrWhiteSpace argsStr then "{}" else argsStr.Trim()
-        if trimmed.StartsWith("\"") && trimmed.EndsWith("\"") then
+        let mutable clean = if String.IsNullOrWhiteSpace argsStr then "{}" else argsStr.Trim()
+        if clean.StartsWith("\"") && clean.EndsWith("\"") then
             try
-                let unescaped = JsonSerializer.Deserialize<string>(trimmed)
-                if String.IsNullOrWhiteSpace unescaped then "{}" else unescaped
-            with _ -> trimmed
-        else trimmed
+                let unescaped = JsonSerializer.Deserialize<string>(clean)
+                if not (String.IsNullOrWhiteSpace unescaped) then clean <- unescaped.Trim()
+            with _ -> ()
+
+        let braceIndex = clean.IndexOf('{')
+        if braceIndex > 0 then
+            let lastBrace = clean.LastIndexOf('}')
+            if lastBrace > braceIndex then
+                clean <- clean.Substring(braceIndex, lastBrace - braceIndex + 1)
+
+        if not (clean.StartsWith("{")) then
+            let rawString = clean.Trim('"')
+            let dict = dict [ "path", rawString; "command", rawString; "key", rawString; "task", rawString; "text", rawString; "url", rawString ]
+            clean <- JsonSerializer.Serialize dict
+
+        clean
 
     /// Step 2.6: Process Tool Calls (Self-Correction, JSON Validation & Execution)
     let processToolCalls (executor: ToolExecutor) (registeredNamesSet: Set<ToolName>) (content: string) (toolCalls: ToolCall list) (state: TurnState) : Async<TurnState> =

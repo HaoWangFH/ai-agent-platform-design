@@ -130,16 +130,7 @@ namespace Skight.AgentPlatform
                                 continue;
                             }
 
-                            string cleanArgs = string.IsNullOrWhiteSpace(functionCall.Arguments) ? "{}" : functionCall.Arguments.Trim();
-                            if (cleanArgs.StartsWith("\"") && cleanArgs.EndsWith("\""))
-                            {
-                                try
-                                {
-                                    var unescaped = JsonSerializer.Deserialize<string>(cleanArgs);
-                                    if (!string.IsNullOrWhiteSpace(unescaped)) cleanArgs = unescaped;
-                                }
-                                catch { /* fallback */ }
-                            }
+                            string cleanArgs = SanitizeJsonArguments(name, functionCall.Arguments);
 
                             try { using var doc = JsonDocument.Parse(cleanArgs); }
                             catch (Exception jsonEx)
@@ -259,6 +250,51 @@ namespace Skight.AgentPlatform
             {
                 session.Messages.Add(new ChatRequestUserMessage("[USER STEERING INTERRUPT]: " + string.Join("\n", items)));
             }
+        }
+
+        public static string SanitizeJsonArguments(string toolName, string rawArgs)
+        {
+            if (string.IsNullOrWhiteSpace(rawArgs)) return "{}";
+            string clean = rawArgs.Trim();
+
+            // 1. Unescape double-encoded JSON strings
+            if (clean.StartsWith("\"") && clean.EndsWith("\""))
+            {
+                try
+                {
+                    var unescaped = JsonSerializer.Deserialize<string>(clean);
+                    if (!string.IsNullOrWhiteSpace(unescaped)) clean = unescaped.Trim();
+                }
+                catch { }
+            }
+
+            // 2. Extract JSON object if concatenated with leading tokens (e.g. "types.fs" {"path":"types.fs"})
+            int braceIndex = clean.IndexOf('{');
+            if (braceIndex > 0)
+            {
+                int lastBrace = clean.LastIndexOf('}');
+                if (lastBrace > braceIndex)
+                {
+                    clean = clean.Substring(braceIndex, lastBrace - braceIndex + 1);
+                }
+            }
+
+            // 3. If clean is a raw unquoted string or file path without braces (e.g. "types.fs")
+            if (!clean.StartsWith("{"))
+            {
+                var rawString = clean.Trim('"');
+                clean = JsonSerializer.Serialize(new Dictionary<string, string>
+                {
+                    ["path"] = rawString,
+                    ["command"] = rawString,
+                    ["key"] = rawString,
+                    ["task"] = rawString,
+                    ["text"] = rawString,
+                    ["url"] = rawString
+                });
+            }
+
+            return clean;
         }
     }
 }
