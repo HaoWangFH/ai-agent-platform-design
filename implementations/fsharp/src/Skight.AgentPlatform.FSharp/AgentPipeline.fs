@@ -278,6 +278,31 @@ module AgentPipeline =
                     ApiCalls = state.ApiCalls
                 }
 
+    /// Step 2.1b: Pre-API Steering Drain (/steer)
+    let drainSteering (queue: System.Collections.Concurrent.ConcurrentQueue<string>) (history: AgentMessage list) : AgentMessage list =
+        if isNull queue then history else
+        let items = System.Collections.Generic.List<string>()
+        let mutable item = ""
+        while queue.TryDequeue(&item) do
+            if not (System.String.IsNullOrWhiteSpace item) then
+                items.Add(item)
+
+        if items.Count = 0 then
+            history
+        else
+            let steeringContent = "\n\n[USER STEERING INTERRUPT]: " + String.concat "\n" items
+            printfn "  [Pre-API Steering Drain] Injected %d mid-turn steering message(s)" items.Count
+
+            match List.rev history with
+            | ToolMessage(callId, content) :: rest ->
+                let updatedToolMsg = ToolMessage(callId, content + steeringContent)
+                List.rev (updatedToolMsg :: rest)
+            | UserMessage content :: rest ->
+                let updatedUserMsg = UserMessage(content + steeringContent)
+                List.rev (updatedUserMsg :: rest)
+            | _ ->
+                history @ [ UserMessage ("[USER STEERING INTERRUPT]: " + String.concat "\n" items) ]
+
     /// Pure, Tail-Recursive 4-Phase Turn Loop Function
     let rec runTurnLoop (llmCaller: LlmCaller) (executor: ToolExecutor) (registeredSchemas: ToolSchema list) (registeredNamesSet: Set<ToolName>) (state: TurnState) : Async<TurnResult> =
         async {
@@ -290,35 +315,42 @@ module AgentPipeline =
             | Exit result -> return result
             | Continue stateAfterBudgetCheck ->
 
+            // Step 2.1b: Pre-API Steering Drain
+            let stateDrained =
+                if not (isNull stateAfterBudgetCheck.SteeringQueue) then
+                    let updatedMessages = drainSteering stateAfterBudgetCheck.SteeringQueue stateAfterBudgetCheck.Messages
+                    { stateAfterBudgetCheck with Messages = updatedMessages }
+                else stateAfterBudgetCheck
+
             // Pipeline Step 2.2 & 2.3: Message Payload Preparation & Context Compression
-            let preparedPayload = preparePayload stateAfterBudgetCheck.Config.ContextWindowLimit stateAfterBudgetCheck.Messages
+            let preparedPayload = preparePayload stateDrained.Config.ContextWindowLimit stateDrained.Messages
 
             // Pipeline Step 2.4: Inner LLM API Call with Retry
-            let! apiResult = callLlmWithRetry llmCaller registeredSchemas stateAfterBudgetCheck.Config.MaxRetries 0 preparedPayload
+            let! apiResult = callLlmWithRetry llmCaller registeredSchemas stateDrained.Config.MaxRetries 0 preparedPayload
 
             match apiResult with
             | Error NoChoicesReturned ->
                 let message = llmErrorMessage NoChoicesReturned
                 return {
                     Outcome = TurnOutcome.Failed (FailureReason.NoResponse message)
-                    Messages = stateAfterBudgetCheck.Messages
-                    ApiCalls = stateAfterBudgetCheck.ApiCalls
+                    Messages = stateDrained.Messages
+                    ApiCalls = stateDrained.ApiCalls
                 }
             | Error (ApiCallFailed err) ->
                 return {
                     Outcome = TurnOutcome.Failed (FailureReason.ApiError err)
-                    Messages = stateAfterBudgetCheck.Messages
-                    ApiCalls = stateAfterBudgetCheck.ApiCalls
+                    Messages = stateDrained.Messages
+                    ApiCalls = stateDrained.ApiCalls
                 }
             | Ok response ->
                 // Pipeline Step 2.6: Tool Call Execution Path
                 if response.ToolCalls.Length > 0 then
-                    let! nextState = processToolCalls executor registeredNamesSet response.Content response.ToolCalls stateAfterBudgetCheck
+                    let! nextState = processToolCalls executor registeredNamesSet response.Content response.ToolCalls stateDrained
                     return! runTurnLoop llmCaller executor registeredSchemas registeredNamesSet nextState
 
                 // Pipeline Step 2.7: Final Text Response Path
                 else
-                    match processTextResponse response.Content stateAfterBudgetCheck with
+                    match processTextResponse response.Content stateDrained with
                     | Exit turnResult -> return turnResult
                     | Continue nextState -> return! runTurnLoop llmCaller executor registeredSchemas registeredNamesSet nextState
         }

@@ -22,5 +22,6 @@ namespace Skight.AgentPlatform
         public bool HasFileMutations { get; set; }
         public bool HasExecutedVerification { get; set; }
         public int PreVerifyNudges { get; set; }
+        public System.Collections.Concurrent.ConcurrentQueue<string> SteeringQueue { get; } = new();
     }
 }

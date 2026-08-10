@@ -59,6 +59,7 @@ module SequentialToolWorkflowSpec =
                 let initialSession : AgentSessionState = {
                     Messages = [ SystemMessage "You are a helpful assistant." ]
                     PendingCommand = RunTurn
+                    SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
                 }
 
                 let! result, nextSession = AgentRunner.runTurnAsync mockLlmCaller mockExecutor config "Find weather in Tokyo and notify Alice." initialSession [] registeredNamesSet

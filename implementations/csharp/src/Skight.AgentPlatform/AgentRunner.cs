@@ -59,6 +59,14 @@ namespace Skight.AgentPlatform
             _session.InterruptRequested = true;
         }
 
+        public void EnqueueSteering(string steeringText)
+        {
+            if (!string.IsNullOrWhiteSpace(steeringText))
+            {
+                _session.SteeringQueue.Enqueue(steeringText);
+            }
+        }
+
         public async Task<TurnResult> RunAsync(string userInput, Func<List<FunctionDefinition>, List<ChatRequestMessage>, Task<ChatCompletions>>? customLlmCaller = null)
         {
             Console.WriteLine($"\nUser: {userInput}");

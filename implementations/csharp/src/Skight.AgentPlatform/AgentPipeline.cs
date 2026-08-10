@@ -77,6 +77,8 @@ namespace Skight.AgentPlatform
 
                 apiCalls++;
 
+                DrainSteering(session);
+
                 var preparedMessages = CompressContextIfNeeded(PrepareApiMessages(session.Messages), config.ContextWindowLimit);
 
                 ChatCompletions? completions = null;
@@ -234,6 +236,46 @@ namespace Skight.AgentPlatform
 
             Console.WriteLine($"  [Turn Exit] Reached max iterations ({config.MaxIterations}).");
             return new TurnResult { FinalResponse = "Reached maximum iteration limit.", Messages = session.Messages, ApiCalls = apiCalls, Failed = true, ExitReason = "budget_exhausted" };
+        }
+
+        private void DrainSteering(AgentSessionState session)
+        {
+            if (session.SteeringQueue.IsEmpty) return;
+
+            var items = new List<string>();
+            while (session.SteeringQueue.TryDequeue(out var item))
+            {
+                if (!string.IsNullOrWhiteSpace(item))
+                {
+                    items.Add(item);
+                }
+            }
+
+            if (items.Count == 0) return;
+
+            string steeringContent = "\n\n[USER STEERING INTERRUPT]: " + string.Join("\n", items);
+            Console.WriteLine($"  [Pre-API Steering Drain] Injected {items.Count} mid-turn steering message(s)");
+
+            if (session.Messages.Count > 0)
+            {
+                var lastMsg = session.Messages[session.Messages.Count - 1];
+                if (lastMsg is ChatRequestToolMessage toolMsg)
+                {
+                    session.Messages[session.Messages.Count - 1] = new ChatRequestToolMessage(toolMsg.Content + steeringContent, toolMsg.ToolCallId);
+                }
+                else if (lastMsg is ChatRequestUserMessage userMsg)
+                {
+                    session.Messages[session.Messages.Count - 1] = new ChatRequestUserMessage(userMsg.Content + steeringContent);
+                }
+                else
+                {
+                    session.Messages.Add(new ChatRequestUserMessage("[USER STEERING INTERRUPT]: " + string.Join("\n", items)));
+                }
+            }
+            else
+            {
+                session.Messages.Add(new ChatRequestUserMessage("[USER STEERING INTERRUPT]: " + string.Join("\n", items)));
+            }
         }
     }
 }

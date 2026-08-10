@@ -89,6 +89,7 @@ module AgentPipelineToolIntegrationSpec =
                     HasFileMutations = false
                     HasExecutedVerification = false
                     PreVerifyNudges = 0
+                    SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
                 }
 
                 let registeredNamesSet = registry.GetRegisteredNames() |> Set.ofList
@@ -116,6 +117,7 @@ module AgentPipelineToolIntegrationSpec =
                 let initialSession : AgentSessionState = {
                     Messages = [ SystemMessage "You are a helpful coding assistant." ]
                     PendingCommand = RunTurn
+                    SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
                 }
 
                 let turn1CallCounter = ref 0
@@ -208,6 +210,7 @@ module AgentPipelineToolIntegrationSpec =
                     HasFileMutations = false
                     HasExecutedVerification = false
                     PreVerifyNudges = 0
+                    SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
                 }
 
                 let! result = AgentPipeline.runTurnLoop mockLlmCaller registry.AsExecutor [] registeredNamesSet initialState
@@ -251,6 +254,7 @@ module AgentPipelineToolIntegrationSpec =
                     HasFileMutations = false
                     HasExecutedVerification = false
                     PreVerifyNudges = 0
+                    SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
                 }
 
                 let! result = AgentPipeline.runTurnLoop mockLlmCaller registry.AsExecutor [] registeredNamesSet initialState
@@ -285,6 +289,7 @@ module AgentPipelineToolIntegrationSpec =
                     HasFileMutations = false
                     HasExecutedVerification = false
                     PreVerifyNudges = 0
+                    SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
                 }
 
                 let! result = AgentPipeline.runTurnLoop mockLlmCaller registry.AsExecutor [] registeredNamesSet initialState

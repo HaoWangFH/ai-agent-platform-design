@@ -19,6 +19,7 @@ module AgentPipelineTests =
         HasFileMutations = false
         HasExecutedVerification = false
         PreVerifyNudges = 0
+        SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
     }
 
     [<Tests>]
@@ -104,6 +105,7 @@ module AgentPipelineTests =
                 let sessionState = {
                     Messages = [ SystemMessage "sys" ]
                     PendingCommand = RunTurn
+                    SteeringQueue = System.Collections.Concurrent.ConcurrentQueue<string>()
                 }
 
                 let! result, nextSession = AgentRunner.runTurnAsync dummyLlmCaller dummyExecutor config "test" sessionState [] Set.empty

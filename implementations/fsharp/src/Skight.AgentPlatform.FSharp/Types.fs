@@ -75,6 +75,7 @@ type TurnCommand =
 type AgentSessionState = {
     Messages: AgentMessage list
     PendingCommand: TurnCommand
+    SteeringQueue: System.Collections.Concurrent.ConcurrentQueue<string>
 }
 
 type ToolDefinition = {
@@ -100,6 +101,7 @@ type TurnState = {
     HasFileMutations: bool
     HasExecutedVerification: bool
     PreVerifyNudges: int
+    SteeringQueue: System.Collections.Concurrent.ConcurrentQueue<string>
 }
 
 /// Control flow result for composable pipeline steps
