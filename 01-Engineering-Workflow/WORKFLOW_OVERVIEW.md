@@ -27,4 +27,4 @@ This document outlines how the AI Agent Platform (`Skight.AgentPlatform`) struct
 - **`10-Skill-Library/` & `11-Prompt-Library/`**: Reusable agent skills and system prompts.
 - **`12-Templates/` & `13-Automation/`**: Project boilerplates and CI/CD automation.
 - **`14-Agent-Framework/`**: Extracted agent interfaces & infrastructure specs.
-- **`15-Azure/`**: Cloud infrastructure & server deployment configs.
+- **`15-Cloud-Infrastructure/`**: Cloud infrastructure, Kubernetes, Docker, & server deployment configs.

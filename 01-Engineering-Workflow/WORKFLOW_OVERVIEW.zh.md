@@ -27,4 +27,4 @@
 - **`10-Skill-Library/` & `11-Prompt-Library/`**：可复用 Agent 技能与 System Prompt 库。
 - **`12-Templates/` & `13-Automation/`**：项目样板与 CI/CD 自动化。
 - **`14-Agent-Framework/`**：提取的 Agent 接口与基础设施规范。
-- **`15-Azure/`**：云部署与基础设施配置。
+- **`15-Cloud-Infrastructure/`**：云基础设施、Kubernetes、Docker 与服务部署配置。

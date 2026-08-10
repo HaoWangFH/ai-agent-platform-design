@@ -24,7 +24,7 @@ This repository follows a strict 7-phase **Software Development Life Cycle (SDLC
 - **`10-Skill-Library/` & `11-Prompt-Library/`**: Reusable agent skills and system prompts.
 - **`12-Templates/` & `13-Automation/`**: Project boilerplates and CI/CD automation.
 - **`14-Agent-Framework/`**: Extracted agent interfaces & infrastructure specs.
-- **`15-Azure/`**: Cloud infrastructure & server deployment configs.
+- **`15-Cloud-Infrastructure/`**: Vendor-neutral cloud infrastructure, Kubernetes, Docker, & deployment configs.
 
 ## 🎯 Rationale
 By abstracting core agent logic and implementing it in C# (.NET 10) and F#, we provide a robust foundation for multi-tenant, cloud-native enterprise AI agent server deployments with strict BDD specification verification.
