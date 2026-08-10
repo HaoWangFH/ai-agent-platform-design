@@ -28,7 +28,9 @@
     <None Include="..\..\08-Knowledge-System\**\*.zh.md" Link="08-Knowledge-System\%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="..\..\*.md" Link="RootDocs\%(Filename)%(Extension)" />
     <None Include="..\..\.agyrules" Link=".agyrules" />
+    <None Include="..\..\.agyrules.zh.md" Link=".agyrules.zh.md" />
     <None Include="..\..\.github\copilot-instructions.md" Link=".github\copilot-instructions.md" />
+    <None Include="..\..\.github\copilot-instructions.zh.md" Link=".github\copilot-instructions.zh.md" />
   </ItemGroup>
 
 </Project>
