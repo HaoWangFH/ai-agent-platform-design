@@ -17,14 +17,15 @@
   <ItemGroup>
     <None Include="..\..\03-Analysis\**\*.md" Link="03-Analysis\%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="..\..\03-Analysis\**\*.zh.md" Link="03-Analysis\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\03-Knowledge-System\**\*.md" Link="03-Knowledge-System\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\03-Knowledge-System\**\*.zh.md" Link="03-Knowledge-System\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\07-Architecture\**\*.md" Link="07-Architecture\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\07-Architecture\**\*.zh.md" Link="07-Architecture\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\08-Specification-Driven-Development\**\*.md" Link="08-Specification-Driven-Development\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\08-Specification-Driven-Development\**\*.zh.md" Link="08-Specification-Driven-Development\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\14-Tasks\**\*.md" Link="14-Tasks\%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="..\..\14-Tasks\**\*.zh.md" Link="14-Tasks\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\04-Architecture\**\*.md" Link="04-Architecture\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\04-Architecture\**\*.zh.md" Link="04-Architecture\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\05-Specification-Driven-Development\**\*.md" Link="05-Specification-Driven-Development\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\05-Specification-Driven-Development\**\*.zh.md" Link="05-Specification-Driven-Development\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\06-Tasks\**\*.md" Link="06-Tasks\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\06-Tasks\**\*.zh.md" Link="06-Tasks\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\07-Testing\**\*.md" Link="07-Testing\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\08-Knowledge-System\**\*.md" Link="08-Knowledge-System\%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="..\..\08-Knowledge-System\**\*.zh.md" Link="08-Knowledge-System\%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="..\..\*.md" Link="RootDocs\%(Filename)%(Extension)" />
     <None Include="..\..\.agyrules" Link=".agyrules" />
     <None Include="..\..\.github\copilot-instructions.md" Link=".github\copilot-instructions.md" />
