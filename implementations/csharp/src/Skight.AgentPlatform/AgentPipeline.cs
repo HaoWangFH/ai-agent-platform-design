@@ -306,12 +306,33 @@ namespace Skight.AgentPlatform
 
             // 3. Re-check brace extraction after unescaping
             braceIndex = clean.IndexOf('{');
-            if (braceIndex > 0)
+            if (braceIndex >= 0)
             {
                 int lastBrace = clean.LastIndexOf('}');
                 if (lastBrace > braceIndex)
                 {
                     clean = clean.Substring(braceIndex, lastBrace - braceIndex + 1);
+                }
+            }
+
+            // 4. Handle concatenated JSON objects e.g. {"path":"Telemetry.fs"}{"command":"ls"}
+            try
+            {
+                using var testDoc = JsonDocument.Parse(clean);
+            }
+            catch
+            {
+                int lastFirstBrace = clean.LastIndexOf('{');
+                int lastLastBrace = clean.LastIndexOf('}');
+                if (lastFirstBrace > 0 && lastLastBrace > lastFirstBrace)
+                {
+                    var candidate = clean.Substring(lastFirstBrace, lastLastBrace - lastFirstBrace + 1);
+                    try
+                    {
+                        using var candidateDoc = JsonDocument.Parse(candidate);
+                        clean = candidate;
+                    }
+                    catch { }
                 }
             }
 

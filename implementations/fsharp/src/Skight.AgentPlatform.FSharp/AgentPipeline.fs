@@ -178,7 +178,7 @@ module AgentPipeline =
 
         let extractBraces () =
             let braceIndex = clean.IndexOf('{')
-            if braceIndex > 0 then
+            if braceIndex >= 0 then
                 let lastBrace = clean.LastIndexOf('}')
                 if lastBrace > braceIndex then
                     clean <- clean.Substring(braceIndex, lastBrace - braceIndex + 1)
@@ -192,6 +192,20 @@ module AgentPipeline =
             with _ -> ()
 
         extractBraces ()
+
+        // Handle concatenated JSON objects e.g. {"path":"Telemetry.fs"}{"command":"ls"}
+        try
+            use doc = JsonDocument.Parse(clean)
+            ()
+        with _ ->
+            let lastFirstBrace = clean.LastIndexOf('{')
+            let lastLastBrace = clean.LastIndexOf('}')
+            if lastFirstBrace > 0 && lastLastBrace > lastFirstBrace then
+                let candidate = clean.Substring(lastFirstBrace, lastLastBrace - lastFirstBrace + 1)
+                try
+                    use candidateDoc = JsonDocument.Parse(candidate)
+                    clean <- candidate
+                with _ -> ()
 
         if not (clean.StartsWith("{")) then
             let rawString = clean.Trim('"')
