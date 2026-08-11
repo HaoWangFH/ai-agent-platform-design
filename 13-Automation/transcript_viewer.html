@@ -162,6 +162,19 @@
         .st-method { color: #38bdf8; font-weight: 600; }   /* Class/Method Name (Cyan) */
         .st-file { color: #4ade80; text-decoration: underline; } /* Source File Path (Green) */
         .st-line { color: #fbbf24; font-weight: bold; }    /* Line Number (Yellow) */
+        
+        .st-link {
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 1px 3px;
+            border-radius: 3px;
+            transition: background 0.15s ease;
+        }
+
+        .st-link:hover {
+            background: #334155;
+        }
     </style>
 </head>
 <body>
@@ -248,7 +261,7 @@
                         ` : ''}
                         ${exceptionDetails ? `
                             <details class="error-details" open>
-                                <summary>💥 Stack Trace / Technical Exception Details</summary>
+                                <summary>💥 Stack Trace / Technical Exception Details (Click file path to open in editor)</summary>
                                 <div class="raw-payload stack-trace">${formatStackTrace(exceptionDetails)}</div>
                             </details>
                         ` : ''}
@@ -267,7 +280,11 @@
             return escapeHtml(text)
                 .replace(/^(System\.[a-zA-Z0-9_\.]+|[a-zA-Z0-9_\.]*Exception:?)/gm, '<span class="st-ex">$1</span>')
                 .replace(/\bat\s+([a-zA-Z0-9_\.\#\+`<>]+)/g, 'at <span class="st-method">$1</span>')
-                .replace(/\bin\s+([a-zA-Z]:\\[^:\n]+):(line\s+\d+)/g, 'in <span class="st-file">$1</span>:<span class="st-line">$2</span>');
+                .replace(/\bin\s+([a-zA-Z]:\\[^:\n]+):(line\s+(\d+))/g, (match, filePath, lineLabel, lineNum) => {
+                    const normPath = filePath.replace(/\\/g, '/');
+                    const vscodeUrl = `vscode://file/${normPath}:${lineNum}`;
+                    return `in <a href="${vscodeUrl}" class="st-link" title="Open in VS Code at line ${lineNum}" target="_blank"><span class="st-file">${filePath}</span>:<span class="st-line">${lineLabel}</span></a>`;
+                });
         }
     </script>
 </body>
