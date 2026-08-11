@@ -124,7 +124,7 @@ namespace Skight.AgentPlatform
                 var choice = completions.Choices[0];
                 var message = choice.Message;
 
-                AgentTelemetry.TrackLlmCall(session.SessionId, session.UserId, session.TurnCount, _model, swLlm.ElapsedMilliseconds, message.Content ?? string.Empty, message.ToolCalls?.Count ?? 0, session.SessionId, turnSpanId);
+                AgentTelemetry.TrackLlmCall(session.SessionId, session.UserId, session.TurnCount, _model, swLlm.ElapsedMilliseconds, message.Content ?? string.Empty, message.ToolCalls, session.SessionId, turnSpanId);
 
                 if (message.ToolCalls != null && message.ToolCalls.Count > 0)
                 {

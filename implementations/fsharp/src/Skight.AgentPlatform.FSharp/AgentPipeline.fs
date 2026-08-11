@@ -346,7 +346,7 @@ module AgentPipeline =
                 AgentTelemetry.trackTurnEnd stateDrained.SessionId stateDrained.UserId stateDrained.TurnIndex 0L err "api_error" (Some stateDrained.SessionId) (Some stateDrained.TurnSpanId)
                 return res
             | Ok response ->
-                AgentTelemetry.trackLlmCall stateDrained.SessionId stateDrained.UserId stateDrained.TurnIndex "gpt-4o" swLlm.ElapsedMilliseconds response.Content response.ToolCalls.Length (Some stateDrained.SessionId) (Some stateDrained.TurnSpanId)
+                AgentTelemetry.trackLlmCall stateDrained.SessionId stateDrained.UserId stateDrained.TurnIndex "gpt-4o" swLlm.ElapsedMilliseconds response.Content response.ToolCalls (Some stateDrained.SessionId) (Some stateDrained.TurnSpanId)
 
                 // Pipeline Step 2.6: Tool Call Execution Path
                 if response.ToolCalls.Length > 0 then

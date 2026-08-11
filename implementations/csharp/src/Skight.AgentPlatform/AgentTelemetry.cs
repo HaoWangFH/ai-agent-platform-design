@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Azure.AI.OpenAI;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
@@ -115,7 +116,29 @@ namespace Skight.AgentPlatform
 
         public static void TrackLlmCall(string sessionId, string userId, int turnIndex, string model, long durationMs, string responseContent, int toolCallsCount, string? traceId = null, string? parentSpanId = null)
         {
+            TrackLlmCall(sessionId, userId, turnIndex, model, durationMs, responseContent, null as IReadOnlyList<ChatCompletionsToolCall>, traceId, parentSpanId);
+        }
+
+        public static void TrackLlmCall(string sessionId, string userId, int turnIndex, string model, long durationMs, string responseContent, IReadOnlyList<ChatCompletionsToolCall>? toolCalls, string? traceId = null, string? parentSpanId = null)
+        {
             if (!Options.Enabled) return;
+            var details = new List<string>();
+            if (toolCalls != null)
+            {
+                foreach (var tc in toolCalls)
+                {
+                    if (tc is ChatCompletionsFunctionToolCall ftc)
+                    {
+                        details.Add($"{ftc.Name}({ftc.Arguments})");
+                    }
+                }
+            }
+
+            string toolSummary = details.Count > 0 ? $" Requested ToolCalls: [{string.Join(", ", details)}]" : "";
+            string payloadText = string.IsNullOrEmpty(responseContent)
+                ? $"Model: {model}{toolSummary}"
+                : $"Model: {model}, Content: {responseContent}{toolSummary}";
+
             Track(new TelemetryEvent
             {
                 TraceId = traceId ?? sessionId,
@@ -127,8 +150,8 @@ namespace Skight.AgentPlatform
                 EventType = TelemetryEventType.LlmCall,
                 DurationMs = durationMs,
                 Name = "llm.call",
-                Payload = string.IsNullOrEmpty(responseContent) ? $"Model: {model}, ToolCalls: {toolCallsCount} (Tool call requested)" : $"Model: {model}, Content: {responseContent}",
-                RawPayload = responseContent
+                Payload = payloadText,
+                RawPayload = $"Content: {responseContent}\nToolCalls:\n{string.Join("\n", details)}"
             });
         }
 

@@ -123,8 +123,11 @@ module AgentTelemetry =
                 RawPayload = userInput
             }
 
-    let trackLlmCall (sessionId: string) (userId: string) (turnIndex: int) (model: string) (durationMs: int64) (responseContent: string) (toolCallsCount: int) (traceId: string option) (parentSpanId: string option) =
+    let trackLlmCall (sessionId: string) (userId: string) (turnIndex: int) (model: string) (durationMs: int64) (responseContent: string) (toolCalls: ToolCall list) (traceId: string option) (parentSpanId: string option) =
         if IsEnabled then
+            let toolDetails = toolCalls |> List.map (fun tc -> sprintf "%s(%s)" (ToolName.value tc.Name) tc.ArgumentsJson)
+            let toolSummary = if toolDetails.IsEmpty then "" else sprintf " Requested ToolCalls: [%s]" (String.concat ", " toolDetails)
+            let payloadText = if String.IsNullOrEmpty responseContent then sprintf "Model: %s%s" model toolSummary else sprintf "Model: %s, Content: %s%s" model responseContent toolSummary
             track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = defaultArg traceId sessionId
@@ -137,8 +140,8 @@ module AgentTelemetry =
                 Timestamp = DateTime.UtcNow
                 DurationMs = durationMs
                 Name = "llm.call"
-                Payload = if String.IsNullOrEmpty responseContent then sprintf "Model: %s, ToolCalls: %d (Tool call requested)" model toolCallsCount else sprintf "Model: %s, Content: %s" model responseContent
-                RawPayload = responseContent
+                Payload = payloadText
+                RawPayload = sprintf "Content: %s\nToolCalls:\n%s" responseContent (String.concat "\n" toolDetails)
             }
 
     let trackToolExecution (sessionId: string) (userId: string) (turnIndex: int) (toolName: string) (durationMs: int64) (argsJson: string) (result: string) (traceId: string option) (parentSpanId: string option) =
