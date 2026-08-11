@@ -1,7 +1,12 @@
-using Aspire.Hosting;
+namespace Skight.AgentPlatform.AppHost;
 
-var builder = DistributedApplication.CreateBuilder(args);
-
-builder.AddProject<Projects.Skight_AgentPlatform>("csharp-agent-platform");
-
-builder.Build().Run();
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var builder = DistributedApplication.CreateBuilder(args);
+        builder.AddProject("csharp-agent-platform", "../Skight.AgentPlatform/Skight.AgentPlatform.csproj");
+        var app = builder.Build();
+        app.Run();
+    }
+}

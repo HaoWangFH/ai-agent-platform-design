@@ -26,6 +26,13 @@ namespace Skight.AgentPlatform
         private static readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private static readonly Task _processingTask;
 
+        public static async Task FlushAsync()
+        {
+            _channel.Writer.TryComplete();
+            await _processingTask;
+            _tracerProvider?.ForceFlush();
+        }
+
         static AgentTelemetry()
         {
             InitializeOpenTelemetry();

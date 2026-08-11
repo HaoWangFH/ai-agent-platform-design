@@ -154,6 +154,9 @@ module AgentTelemetry =
 
     let flush () =
         agent.PostAndReply(fun reply -> FlushMessage reply)
+        match tracerProvider with
+        | Some tp -> tp.ForceFlush() |> ignore
+        | None -> ()
 
     let trackTurnStart (sessionId: string) (userId: string) (turnIndex: int) (userInput: string) (traceId: string option) (spanId: string option) =
         if IsEnabled then
