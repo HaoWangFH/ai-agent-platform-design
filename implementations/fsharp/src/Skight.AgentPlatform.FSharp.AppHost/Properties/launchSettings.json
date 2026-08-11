@@ -10,7 +10,8 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",
         "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:4317",
-        "ASPNETCORE_URLS": "http://localhost:18888"
+        "ASPNETCORE_URLS": "http://localhost:18888",
+        "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true"
       }
     }
   }
