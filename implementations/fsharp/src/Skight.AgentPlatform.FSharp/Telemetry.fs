@@ -4,6 +4,8 @@ open System
 open System.IO
 open System.Text.Json
 open System.Diagnostics
+open OpenTelemetry
+open OpenTelemetry.Trace
 
 type TelemetryEventType =
     | SessionStart
@@ -39,7 +41,21 @@ module AgentTelemetry =
 
     let mutable IsEnabled = true
     let mutable LogDirectory = "logs/transcripts"
+    let mutable OtlpEndpoint = "http://localhost:4317"
+    let mutable private tracerProvider: TracerProvider option = None
     let activitySource = new ActivitySource("Skight.AgentPlatform.FSharp", "1.0.0")
+
+    let initOpenTelemetry (endpoint: string option) =
+        let ep = defaultArg endpoint OtlpEndpoint
+        if IsEnabled && tracerProvider.IsNone then
+            try
+                let builder =
+                    Sdk.CreateTracerProviderBuilder()
+                        .AddSource("Skight.AgentPlatform.FSharp")
+                        .AddOtlpExporter(fun opt -> opt.Endpoint <- Uri(ep))
+                tracerProvider <- Some(builder.Build())
+            with ex ->
+                Console.WriteLine(sprintf "OTel Init Warning: %s" ex.Message)
 
     let private writeToFile (evt: FSharpTelemetryEvent) =
         try
@@ -93,6 +109,7 @@ module AgentTelemetry =
 
     let track (evt: FSharpTelemetryEvent) =
         if IsEnabled then
+            initOpenTelemetry None
             agent.Post(EventMessage evt)
             try
                 use activity = activitySource.StartActivity(evt.Name, ActivityKind.Internal)
