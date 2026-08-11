@@ -36,20 +36,19 @@ namespace Skight.AgentPlatform
         {
             if (!Options.Enabled || _tracerProvider != null) return;
             try
-            {
-                var builder = Sdk.CreateTracerProviderBuilder()
-                    .AddSource("Skight.AgentPlatform");
-
-                if (!string.IsNullOrWhiteSpace(Options.OtlpEndpoint))
                 {
-                    builder.AddOtlpExporter(opt =>
-                    {
-                        opt.Endpoint = new Uri(Options.OtlpEndpoint);
-                    });
-                }
+                    var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+                                ?? (string.IsNullOrWhiteSpace(Options.OtlpEndpoint) ? "http://localhost:4317" : Options.OtlpEndpoint);
 
-                _tracerProvider = builder.Build();
-            }
+                    var builder = Sdk.CreateTracerProviderBuilder()
+                        .AddSource("Skight.AgentPlatform")
+                        .AddOtlpExporter(opt =>
+                        {
+                            opt.Endpoint = new Uri(endpoint);
+                        });
+
+                    _tracerProvider = builder.Build();
+                }
             catch
             {
                 // Soft fallback if OTLP collector is not reachable locally
@@ -59,11 +58,27 @@ namespace Skight.AgentPlatform
         public static void Track(TelemetryEvent evt)
         {
             if (!Options.Enabled) return;
+            InitializeOpenTelemetry();
             _channel.Writer.TryWrite(evt);
 
             try
             {
-                using var activity = ActivitySource.StartActivity(evt.Name, ActivityKind.Internal);
+                ActivityContext parentContext = default;
+                if (!string.IsNullOrEmpty(evt.TraceId) && !string.IsNullOrEmpty(evt.ParentSpanId))
+                {
+                    try
+                    {
+                        var traceId = ActivityTraceId.CreateFromString(evt.TraceId.PadLeft(32, '0').AsSpan());
+                        var parentSpanId = ActivitySpanId.CreateFromString(evt.ParentSpanId.PadLeft(16, '0').AsSpan());
+                        parentContext = new ActivityContext(traceId, parentSpanId, ActivityTraceFlags.Recorded);
+                    }
+                    catch { }
+                }
+
+                var activity = parentContext != default
+                    ? ActivitySource.StartActivity(evt.Name, ActivityKind.Internal, parentContext)
+                    : ActivitySource.StartActivity(evt.Name, ActivityKind.Internal);
+
                 if (activity != null)
                 {
                     activity.SetTag("gen_ai.session.id", evt.SessionId);
@@ -85,6 +100,14 @@ namespace Skight.AgentPlatform
                     {
                         activity.SetTag(attr.Key, attr.Value);
                     }
+
+                    if (evt.DurationMs > 0)
+                    {
+                        activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(evt.DurationMs));
+                    }
+
+                    activity.Stop();
+                    activity.Dispose();
                 }
             }
             catch { }

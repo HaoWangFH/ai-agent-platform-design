@@ -46,9 +46,13 @@ module AgentTelemetry =
     let activitySource = new ActivitySource("Skight.AgentPlatform.FSharp", "1.0.0")
 
     let initOpenTelemetry (endpoint: string option) =
-        let ep = defaultArg endpoint OtlpEndpoint
         if IsEnabled && tracerProvider.IsNone then
             try
+                let envEp = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+                let ep = 
+                    if not (String.IsNullOrWhiteSpace envEp) then envEp
+                    else defaultArg endpoint OtlpEndpoint
+
                 let builder =
                     Sdk.CreateTracerProviderBuilder()
                         .AddSource("Skight.AgentPlatform.FSharp")
@@ -112,7 +116,22 @@ module AgentTelemetry =
             initOpenTelemetry None
             agent.Post(EventMessage evt)
             try
-                use activity = activitySource.StartActivity(evt.Name, ActivityKind.Internal)
+                let mutable parentContext = ActivityContext()
+                match evt.ParentSpanId with
+                | Some parentSpanIdStr when not (String.IsNullOrWhiteSpace evt.TraceId) ->
+                    try
+                        let traceId = ActivityTraceId.CreateFromString(evt.TraceId.PadLeft(32, '0').AsSpan())
+                        let spanId = ActivitySpanId.CreateFromString(parentSpanIdStr.PadLeft(16, '0').AsSpan())
+                        parentContext <- ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded)
+                    with _ -> ()
+                | _ -> ()
+
+                let activity =
+                    if parentContext <> ActivityContext() then
+                        activitySource.StartActivity(evt.Name, ActivityKind.Internal, parentContext)
+                    else
+                        activitySource.StartActivity(evt.Name, ActivityKind.Internal)
+
                 if not (isNull activity) then
                     activity.SetTag("gen_ai.session.id", evt.SessionId) |> ignore
                     activity.SetTag("gen_ai.user.id", evt.UserId) |> ignore
@@ -125,6 +144,12 @@ module AgentTelemetry =
                         match evt.ExceptionDetails with
                         | Some exStr -> activity.SetTag("exception.stacktrace", exStr) |> ignore
                         | None -> ()
+
+                    if evt.DurationMs > 0L then
+                        activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(float evt.DurationMs)) |> ignore
+
+                    activity.Stop()
+                    activity.Dispose()
             with _ -> ()
 
     let flush () =
