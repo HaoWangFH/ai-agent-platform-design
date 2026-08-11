@@ -164,11 +164,25 @@ module AgentTelemetry =
             }
 
             try
-                let act = activitySource.StartActivity("agent.turn", ActivityKind.Internal)
+                let mutable rootContext = ActivityContext()
+                if not (String.IsNullOrWhiteSpace tid) then
+                    try
+                        let w3cTraceId = ActivityTraceId.CreateFromString(toW3cTraceId(tid).AsSpan())
+                        let dummySpanId = ActivitySpanId.CreateRandom()
+                        rootContext <- ActivityContext(w3cTraceId, dummySpanId, ActivityTraceFlags.Recorded)
+                    with _ -> ()
+
+                let act =
+                    if rootContext <> ActivityContext() then
+                        activitySource.StartActivity("agent.turn", ActivityKind.Internal, rootContext)
+                    else
+                        activitySource.StartActivity("agent.turn", ActivityKind.Internal)
+
                 if not (isNull act) then
                     act.SetTag("gen_ai.session.id", sessionId) |> ignore
                     act.SetTag("gen_ai.user.id", userId) |> ignore
                     act.SetTag("gen_ai.turn.index", turnIndex) |> ignore
+                    act.SetTag("gen_ai.prompt", userInput) |> ignore
                     act.SetTag("payload", userInput) |> ignore
                     activeTurnActivities.[sid] <- act
             with _ -> ()
@@ -179,6 +193,7 @@ module AgentTelemetry =
             let toolDetails = toolCalls |> List.map (fun tc -> sprintf "%s(%s)" (ToolName.value tc.Name) tc.ArgumentsJson)
             let toolSummary = if toolDetails.IsEmpty then "" else sprintf " Requested ToolCalls: [%s]" (String.concat ", " toolDetails)
             let payloadText = if String.IsNullOrEmpty responseContent then sprintf "Model: %s%s" model toolSummary else sprintf "Model: %s, Content: %s%s" model responseContent toolSummary
+            let rawPayloadText = sprintf "Content: %s\nToolCalls:\n%s" responseContent (String.concat "\n" toolDetails)
             track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = defaultArg traceId sessionId
@@ -192,7 +207,7 @@ module AgentTelemetry =
                 DurationMs = durationMs
                 Name = "llm.call"
                 Payload = payloadText
-                RawPayload = sprintf "Content: %s\nToolCalls:\n%s" responseContent (String.concat "\n" toolDetails)
+                RawPayload = rawPayloadText
                 IsError = false
                 ExceptionDetails = None
             }
@@ -214,7 +229,10 @@ module AgentTelemetry =
                     activity.SetTag("gen_ai.session.id", sessionId) |> ignore
                     activity.SetTag("gen_ai.user.id", userId) |> ignore
                     activity.SetTag("gen_ai.turn.index", turnIndex) |> ignore
+                    activity.SetTag("gen_ai.model", model) |> ignore
+                    activity.SetTag("gen_ai.response", responseContent) |> ignore
                     activity.SetTag("payload", payloadText) |> ignore
+                    activity.SetTag("raw_payload", rawPayloadText) |> ignore
                     if durationMs > 0L then
                         activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(float durationMs)) |> ignore
                     activity.Stop()
@@ -226,6 +244,7 @@ module AgentTelemetry =
             initOpenTelemetry None
             let err = defaultArg isError false
             let payloadText = if err then sprintf "Tool '%s' Error: %s" toolName result else sprintf "Args: %s => Result: %s" argsJson result
+            let rawPayloadText = sprintf "Args: %s\nResult: %s" argsJson result
             track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = defaultArg traceId sessionId
@@ -239,7 +258,7 @@ module AgentTelemetry =
                 DurationMs = durationMs
                 Name = sprintf "tool.execution:%s" toolName
                 Payload = payloadText
-                RawPayload = sprintf "Args: %s\nResult: %s" argsJson result
+                RawPayload = rawPayloadText
                 IsError = err
                 ExceptionDetails = exceptionDetails
             }
@@ -262,7 +281,11 @@ module AgentTelemetry =
                     activity.SetTag("gen_ai.session.id", sessionId) |> ignore
                     activity.SetTag("gen_ai.user.id", userId) |> ignore
                     activity.SetTag("gen_ai.turn.index", turnIndex) |> ignore
+                    activity.SetTag("tool.name", toolName) |> ignore
+                    activity.SetTag("tool.args", argsJson) |> ignore
+                    activity.SetTag("tool.result", result) |> ignore
                     activity.SetTag("payload", payloadText) |> ignore
+                    activity.SetTag("raw_payload", rawPayloadText) |> ignore
                     if err then
                         activity.SetStatus(ActivityStatusCode.Error, payloadText) |> ignore
                     if durationMs > 0L then
@@ -297,7 +320,10 @@ module AgentTelemetry =
             try
                 match activeTurnActivities.TryRemove(sid) with
                 | true, act when not (isNull act) ->
+                    act.SetTag("gen_ai.final_response", finalResponse) |> ignore
+                    act.SetTag("gen_ai.exit_reason", exitReason) |> ignore
                     act.SetTag("payload", sprintf "ExitReason: %s, ResponseLength: %d" exitReason finalResponse.Length) |> ignore
+                    act.SetTag("raw_payload", finalResponse) |> ignore
                     if exitReason <> "completed" && exitReason <> "text_response" then
                         act.SetStatus(ActivityStatusCode.Error, sprintf "ExitReason: %s" exitReason) |> ignore
                     if durationMs > 0L then

@@ -62,6 +62,18 @@ namespace Skight.AgentPlatform
             }
         }
 
+        private static string ToW3cTraceId(string idStr)
+        {
+            var clean = string.IsNullOrEmpty(idStr) ? "" : idStr.Replace("-", "");
+            return clean.Length >= 32 ? clean[..32] : clean.PadLeft(32, '0');
+        }
+
+        private static string ToW3cSpanId(string idStr)
+        {
+            var clean = string.IsNullOrEmpty(idStr) ? "" : idStr.Replace("-", "");
+            return clean.Length >= 16 ? clean[..16] : clean.PadLeft(16, '0');
+        }
+
         public static void Track(TelemetryEvent evt)
         {
             if (!Options.Enabled) return;
@@ -104,12 +116,28 @@ namespace Skight.AgentPlatform
 
             try
             {
-                var act = ActivitySource.StartActivity("agent.turn", ActivityKind.Internal);
+                ActivityContext rootContext = default;
+                if (!string.IsNullOrEmpty(tid))
+                {
+                    try
+                    {
+                        var w3cTraceId = ActivityTraceId.CreateFromString(ToW3cTraceId(tid).AsSpan());
+                        var dummySpanId = ActivitySpanId.CreateRandom();
+                        rootContext = new ActivityContext(w3cTraceId, dummySpanId, ActivityTraceFlags.Recorded);
+                    }
+                    catch { }
+                }
+
+                var act = rootContext != default
+                    ? ActivitySource.StartActivity("agent.turn", ActivityKind.Internal, rootContext)
+                    : ActivitySource.StartActivity("agent.turn", ActivityKind.Internal);
+
                 if (act != null)
                 {
                     act.SetTag("gen_ai.session.id", sessionId);
                     act.SetTag("gen_ai.user.id", userId);
                     act.SetTag("gen_ai.turn.index", turnIndex);
+                    act.SetTag("gen_ai.prompt", userInput);
                     act.SetTag("payload", userInput);
                     ActiveTurnActivities[sid] = act;
                 }
@@ -139,6 +167,7 @@ namespace Skight.AgentPlatform
             }
             var toolSummary = details.Count > 0 ? $" Requested ToolCalls: [{string.Join(", ", details)}]" : "";
             var payloadText = string.IsNullOrEmpty(responseContent) ? $"Model: {model}{toolSummary}" : $"Model: {model}, Content: {responseContent}{toolSummary}";
+            var rawPayloadText = $"Content: {responseContent}\nToolCalls:\n{string.Join("\n", details)}";
 
             Track(new TelemetryEvent
             {
@@ -152,7 +181,7 @@ namespace Skight.AgentPlatform
                 DurationMs = durationMs,
                 Name = "llm.call",
                 Payload = payloadText,
-                RawPayload = $"Content: {responseContent}\nToolCalls:\n{string.Join("\n", details)}"
+                RawPayload = rawPayloadText
             });
 
             try
@@ -172,7 +201,10 @@ namespace Skight.AgentPlatform
                     activity.SetTag("gen_ai.session.id", sessionId);
                     activity.SetTag("gen_ai.user.id", userId);
                     activity.SetTag("gen_ai.turn.index", turnIndex);
+                    activity.SetTag("gen_ai.model", model);
+                    activity.SetTag("gen_ai.response", responseContent);
                     activity.SetTag("payload", payloadText);
+                    activity.SetTag("raw_payload", rawPayloadText);
                     if (durationMs > 0)
                     {
                         activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(durationMs));
@@ -189,6 +221,7 @@ namespace Skight.AgentPlatform
             if (!Options.Enabled) return;
             InitializeOpenTelemetry();
             var payloadText = isError ? $"Tool '{toolName}' Error: {result}" : $"Args: {argsJson} => Result: {result}";
+            var rawPayloadText = $"Args: {argsJson}\nResult: {result}";
             Track(new TelemetryEvent
             {
                 TraceId = traceId ?? sessionId,
@@ -201,7 +234,7 @@ namespace Skight.AgentPlatform
                 DurationMs = durationMs,
                 Name = $"tool.execution:{toolName}",
                 Payload = payloadText,
-                RawPayload = $"Args: {argsJson}\nResult: {result}",
+                RawPayload = rawPayloadText,
                 IsError = isError,
                 ExceptionDetails = exception?.ToString()
             });
@@ -224,7 +257,11 @@ namespace Skight.AgentPlatform
                     activity.SetTag("gen_ai.session.id", sessionId);
                     activity.SetTag("gen_ai.user.id", userId);
                     activity.SetTag("gen_ai.turn.index", turnIndex);
+                    activity.SetTag("tool.name", toolName);
+                    activity.SetTag("tool.args", argsJson);
+                    activity.SetTag("tool.result", result);
                     activity.SetTag("payload", payloadText);
+                    activity.SetTag("raw_payload", rawPayloadText);
                     if (isError)
                     {
                         activity.SetStatus(ActivityStatusCode.Error, payloadText);
@@ -265,7 +302,10 @@ namespace Skight.AgentPlatform
             {
                 if (ActiveTurnActivities.TryRemove(sid, out var act) && act != null)
                 {
+                    act.SetTag("gen_ai.final_response", finalResponse);
+                    act.SetTag("gen_ai.exit_reason", exitReason);
                     act.SetTag("payload", $"ExitReason: {exitReason}, ResponseLength: {finalResponse.Length}");
+                    act.SetTag("raw_payload", finalResponse);
                     if (exitReason != "completed" && exitReason != "text_response")
                     {
                         act.SetStatus(ActivityStatusCode.Error, $"ExitReason: {exitReason}");
