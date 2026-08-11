@@ -111,6 +111,16 @@ module AgentTelemetry =
             loop ()
         )
 
+    let toW3cTraceId (idStr: string) =
+        let clean = if isNull idStr then "" else idStr.Replace("-", "")
+        if clean.Length >= 32 then clean.Substring(0, 32)
+        else clean.PadLeft(32, '0')
+
+    let toW3cSpanId (idStr: string) =
+        let clean = if isNull idStr then "" else idStr.Replace("-", "")
+        if clean.Length >= 16 then clean.Substring(0, 16)
+        else clean.PadLeft(16, '0')
+
     let track (evt: FSharpTelemetryEvent) =
         if IsEnabled then
             initOpenTelemetry None
@@ -120,8 +130,8 @@ module AgentTelemetry =
                 match evt.ParentSpanId with
                 | Some parentSpanIdStr when not (String.IsNullOrWhiteSpace evt.TraceId) ->
                     try
-                        let traceId = ActivityTraceId.CreateFromString(evt.TraceId.PadLeft(32, '0').AsSpan())
-                        let spanId = ActivitySpanId.CreateFromString(parentSpanIdStr.PadLeft(16, '0').AsSpan())
+                        let traceId = ActivityTraceId.CreateFromString(toW3cTraceId(evt.TraceId).AsSpan())
+                        let spanId = ActivitySpanId.CreateFromString(toW3cSpanId(parentSpanIdStr).AsSpan())
                         parentContext <- ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded)
                     with _ -> ()
                 | _ -> ()

@@ -62,6 +62,18 @@ namespace Skight.AgentPlatform
             }
         }
 
+        private static string ToW3cTraceId(string idStr)
+        {
+            var clean = string.IsNullOrEmpty(idStr) ? "" : idStr.Replace("-", "");
+            return clean.Length >= 32 ? clean[..32] : clean.PadLeft(32, '0');
+        }
+
+        private static string ToW3cSpanId(string idStr)
+        {
+            var clean = string.IsNullOrEmpty(idStr) ? "" : idStr.Replace("-", "");
+            return clean.Length >= 16 ? clean[..16] : clean.PadLeft(16, '0');
+        }
+
         public static void Track(TelemetryEvent evt)
         {
             if (!Options.Enabled) return;
@@ -75,8 +87,8 @@ namespace Skight.AgentPlatform
                 {
                     try
                     {
-                        var traceId = ActivityTraceId.CreateFromString(evt.TraceId.PadLeft(32, '0').AsSpan());
-                        var parentSpanId = ActivitySpanId.CreateFromString(evt.ParentSpanId.PadLeft(16, '0').AsSpan());
+                        var traceId = ActivityTraceId.CreateFromString(ToW3cTraceId(evt.TraceId).AsSpan());
+                        var parentSpanId = ActivitySpanId.CreateFromString(ToW3cSpanId(evt.ParentSpanId).AsSpan());
                         parentContext = new ActivityContext(traceId, parentSpanId, ActivityTraceFlags.Recorded);
                     }
                     catch { }
