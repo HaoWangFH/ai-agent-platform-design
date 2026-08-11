@@ -233,6 +233,51 @@ module Program =
         let agent = Agent(effectiveKey, registry, config, ?endpoint=endpoint, ?jwtToken=jwtToken)
         printfn "Agent is ready. Type 'exit' or 'quit' to stop."
 
+        let executeTurn prompt session =
+            try
+                let isLiveStreaming = not isMockMode
+
+                let result, nextSession =
+                    if isLiveStreaming then
+                        let mutable hasPrintedText = false
+                        let onChunk chunk =
+                            match chunk with
+                            | TextDelta text when not (String.IsNullOrEmpty(text)) ->
+                                if not hasPrintedText then
+                                    printf "Assistant: "
+                                    hasPrintedText <- true
+                                printf "%s" text
+                            | StreamCompleted _ when hasPrintedText ->
+                                printfn ""
+                            | _ -> ()
+
+                        agent.RunPureStreamingAsync(prompt, session, onChunk)
+                        |> Async.RunSynchronously
+                    else
+                        let res, nextSess =
+                            agent.RunPureAsync(prompt, session)
+                            |> Async.RunSynchronously
+                        match res.Outcome with
+                        | TurnOutcome.Completed text -> printfn "Assistant: %s" text
+                        | _ -> ()
+                        res, nextSess
+
+                match result.Outcome with
+                | TurnOutcome.Failed reason when isMockMode ->
+                    let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
+                    printfn "❌ API Call Failed: %s" err
+                    printfn "💡 Hint: Please set OPENAI_API_KEY environment variable or create a .env file with OPENAI_API_KEY=your_key to connect to live OpenAI/Azure endpoints."
+                | TurnOutcome.Failed reason ->
+                    let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
+                    printfn "❌ API Call Failed: %s" err
+                | TurnOutcome.Completed _
+                | TurnOutcome.Interrupted -> ()
+
+                nextSession
+            with ex ->
+                printfn "Error: %s" ex.Message
+                session
+
         let rec loop session =
             printf "> "
             let input = Console.ReadLine()
@@ -242,53 +287,19 @@ module Program =
                 if trimmed.ToLower() = "exit" || trimmed.ToLower() = "quit" then 0
                 elif String.IsNullOrEmpty trimmed then loop session
                 else
-                    try
-                        let isLiveStreaming = not isMockMode
-
-                        let result, nextSession =
-                            if isLiveStreaming then
-                                let mutable hasPrintedText = false
-                                let onChunk chunk =
-                                    match chunk with
-                                    | TextDelta text when not (String.IsNullOrEmpty(text)) ->
-                                        if not hasPrintedText then
-                                            printf "Assistant: "
-                                            hasPrintedText <- true
-                                        printf "%s" text
-                                    | StreamCompleted _ when hasPrintedText ->
-                                        printfn ""
-                                    | _ -> ()
-
-                                agent.RunPureStreamingAsync(trimmed, session, onChunk)
-                                |> Async.RunSynchronously
-                            else
-                                let res, nextSess =
-                                    agent.RunPureAsync(trimmed, session)
-                                    |> Async.RunSynchronously
-                                match res.Outcome with
-                                | TurnOutcome.Completed text -> printfn "Assistant: %s" text
-                                | _ -> ()
-                                res, nextSess
-
-                        match result.Outcome with
-                        | TurnOutcome.Failed reason when isMockMode ->
-                            let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
-                            printfn "❌ API Call Failed: %s" err
-                            printfn "💡 Hint: Please set OPENAI_API_KEY environment variable or create a .env file with OPENAI_API_KEY=your_key to connect to live OpenAI/Azure endpoints."
-                        | TurnOutcome.Failed reason ->
-                            let err = match reason with | FailureReason.ApiError e -> e | FailureReason.BudgetExhausted e -> e | FailureReason.NoResponse e -> e
-                            printfn "❌ API Call Failed: %s" err
-                        | TurnOutcome.Completed _
-                        | TurnOutcome.Interrupted -> ()
-
-                        loop nextSession
-                    with ex ->
-                        printfn "Error: %s" ex.Message
-                        loop session
+                    let nextSess = executeTurn trimmed session
+                    loop nextSess
 
         let initialSession = agent.CreateInitialSession()
         try
-            loop initialSession
+            if argv.Length > 0 then
+                let promptFromArgs = String.Join(" ", argv)
+                printfn "Processing prompt: %s" promptFromArgs
+                let _ = executeTurn promptFromArgs initialSession
+                AgentTelemetry.flush ()
+                0
+            else
+                loop initialSession
         finally
             match mcpClientOpt with
             | Some client -> client.Dispose()

@@ -7,7 +7,9 @@ module Program =
     [<EntryPoint>]
     let main args =
         let builder = DistributedApplication.CreateBuilder(args)
-        let _agent = builder.AddProject("fsharp-agent-platform", "../Skight.AgentPlatform.FSharp/Skight.AgentPlatform.FSharp.fsproj")
+        let _agent =
+            builder.AddProject("fsharp-agent-platform", "../Skight.AgentPlatform.FSharp/Skight.AgentPlatform.FSharp.fsproj")
+                   .WithArgs("display Telemetry.fs")
         let app = builder.Build()
         app.Run()
         0
