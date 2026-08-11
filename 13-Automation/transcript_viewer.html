@@ -15,6 +15,7 @@
             --accent-amber: #fbbf24;
             --accent-purple: #c084fc;
             --accent-pink: #f472b6;
+            --accent-red: #f87171;
             --border-color: #334155;
         }
 
@@ -74,6 +75,11 @@
             border-left: 4px solid var(--accent-purple);
         }
 
+        .event-card.has-error {
+            border-left: 4px solid var(--accent-red);
+            background: #2a1215;
+        }
+
         .event-header {
             display: flex;
             align-items: center;
@@ -93,6 +99,7 @@
         .badge-LlmCall { background: #9333ea20; color: var(--accent-purple); border: 1px solid #9333ea; }
         .badge-ToolExecution { background: #d9770620; color: var(--accent-amber); border: 1px solid #d97706; }
         .badge-TurnEnd { background: #16a34a20; color: var(--accent-green); border: 1px solid #16a34a; }
+        .badge-Error { background: #dc262640; color: var(--accent-red); border: 1px solid #dc2626; }
         .badge-Span { background: #47556940; color: var(--text-muted); font-family: monospace; font-size: 0.7rem; }
 
         .timestamp {
@@ -126,6 +133,10 @@
             font-size: 0.85rem;
         }
 
+        details.error-details summary {
+            color: var(--accent-red);
+        }
+
         .raw-payload {
             background: #020617;
             padding: 12px;
@@ -137,6 +148,12 @@
             word-break: break-all;
             color: #cbd5e1;
             border: 1px solid #1e293b;
+        }
+
+        .stack-trace {
+            background: #450a0a;
+            color: #fca5a5;
+            border: 1px solid #7f1d1d;
         }
     </style>
 </head>
@@ -186,22 +203,27 @@
                     const card = document.createElement('div');
                     
                     const isChild = !!evt.ParentSpanId;
-                    card.className = `event-card ${isChild ? 'is-child' : ''}`;
+                    const isError = evt.IsError || (evt.Payload && evt.Payload.includes('Error:'));
+                    card.className = `event-card ${isChild ? 'is-child' : ''} ${isError ? 'has-error' : ''}`;
 
                     const eventType = evt.EventType || 'Event';
                     const name = evt.Name || 'Step';
                     const timestamp = evt.Timestamp ? new Date(evt.Timestamp).toLocaleTimeString() : '';
                     const duration = evt.DurationMs ? ` (${evt.DurationMs} ms)` : '';
                     const payload = evt.Payload || '';
-                    const rawPayload = evt.RawPayload || (evt.Attributes ? JSON.stringify(evt.Attributes, null, 2) : '');
+                    const rawPayload = evt.RawPayload || '';
+                    const exceptionDetails = evt.ExceptionDetails || '';
                     const spanId = evt.SpanId ? `Span: ${evt.SpanId.substring(0, 8)}` : '';
                     const parentSpanId = evt.ParentSpanId ? `Parent: ${evt.ParentSpanId.substring(0, 8)}` : '';
+
+                    const showDetails = rawPayload && rawPayload.trim() !== payload.trim();
 
                     card.innerHTML = `
                         <div class="event-header">
                             <div>
                                 ${isChild ? '<span class="tree-line">└──</span>' : ''}
                                 <span class="badge badge-${eventType}">${eventType}</span>
+                                ${isError ? '<span class="badge badge-Error">ERROR</span>' : ''}
                                 <strong style="margin-left: 8px;">${name}${duration}</strong>
                             </div>
                             <div>
@@ -211,10 +233,16 @@
                             </div>
                         </div>
                         <div class="payload">${escapeHtml(payload)}</div>
-                        ${rawPayload ? `
+                        ${showDetails ? `
                             <details>
                                 <summary>🔍 View Full Raw Payload / Attributes</summary>
                                 <div class="raw-payload">${escapeHtml(rawPayload)}</div>
+                            </details>
+                        ` : ''}
+                        ${exceptionDetails ? `
+                            <details class="error-details">
+                                <summary>💥 Stack Trace / Technical Exception Details</summary>
+                                <div class="raw-payload stack-trace">${escapeHtml(exceptionDetails)}</div>
                             </details>
                         ` : ''}
                     `;

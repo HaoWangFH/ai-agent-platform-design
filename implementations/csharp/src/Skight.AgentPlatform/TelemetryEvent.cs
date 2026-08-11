@@ -28,6 +28,8 @@ namespace Skight.AgentPlatform
         public string Name { get; init; } = string.Empty;
         public string Payload { get; init; } = string.Empty;
         public string RawPayload { get; init; } = string.Empty;
+        public bool IsError { get; init; }
+        public string? ExceptionDetails { get; init; }
         public Dictionary<string, object> Attributes { get; init; } = new();
     }
 }

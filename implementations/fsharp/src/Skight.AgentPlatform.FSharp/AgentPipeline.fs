@@ -217,6 +217,7 @@ module AgentPipeline =
                             let avail = registeredNamesSet |> Seq.map ToolName.value |> String.concat ", "
                             let errStr = sprintf "Error: Tool '%s' is not registered. Available tools: %s" nameStr avail
                             printfn "  [Tool Validation Error] %s" errStr
+                            AgentTelemetry.trackToolExecution state.SessionId state.UserId state.TurnIndex nameStr 0L toolCall.ArgumentsJson errStr (Some state.SessionId) (Some state.TurnSpanId) (Some true) (Some errStr)
                             return ToolMessage(callId, errStr)
                         else
                             try
@@ -225,12 +226,13 @@ module AgentPipeline =
                                 let swTool = System.Diagnostics.Stopwatch.StartNew()
                                 let! execResult = executor name argsStr
                                 swTool.Stop()
-                                AgentTelemetry.trackToolExecution state.SessionId state.UserId state.TurnIndex nameStr swTool.ElapsedMilliseconds argsStr execResult (Some state.SessionId) (Some state.TurnSpanId)
+                                AgentTelemetry.trackToolExecution state.SessionId state.UserId state.TurnIndex nameStr swTool.ElapsedMilliseconds argsStr execResult (Some state.SessionId) (Some state.TurnSpanId) None None
                                 printfn "  [Tool Result] %s" execResult
                                 return ToolMessage(callId, execResult)
                             with jsonEx ->
                                 let errStr = sprintf "Error: Invalid JSON arguments for tool '%s': %s" nameStr jsonEx.Message
                                 printfn "  [JSON Parse Error] %s" errStr
+                                AgentTelemetry.trackToolExecution state.SessionId state.UserId state.TurnIndex nameStr 0L argsStr errStr (Some state.SessionId) (Some state.TurnSpanId) (Some true) (Some (jsonEx.ToString()))
                                 return ToolMessage(callId, errStr)
                     })
                 |> Async.Parallel

@@ -144,6 +144,7 @@ namespace Skight.AgentPlatform
                             {
                                 var errorMsg = $"Error: Tool '{name}' is not registered. Available tools: {string.Join(", ", registeredNames)}";
                                 Console.WriteLine($"  [Tool Validation Error] {errorMsg}");
+                                AgentTelemetry.TrackToolExecution(session.SessionId, session.UserId, session.TurnCount, name, 0, functionCall.Arguments, errorMsg, session.SessionId, turnSpanId, isError: true);
                                 session.Messages.Add(new ChatRequestToolMessage(errorMsg, callId));
                                 continue;
                             }
@@ -155,6 +156,7 @@ namespace Skight.AgentPlatform
                             {
                                 var errorMsg = $"Error: Invalid JSON arguments for tool '{name}': {jsonEx.Message}";
                                 Console.WriteLine($"  [JSON Parse Error] {errorMsg}");
+                                AgentTelemetry.TrackToolExecution(session.SessionId, session.UserId, session.TurnCount, name, 0, functionCall.Arguments, errorMsg, session.SessionId, turnSpanId, isError: true, exception: jsonEx);
                                 session.Messages.Add(new ChatRequestToolMessage(errorMsg, callId));
                                 continue;
                             }
@@ -187,6 +189,7 @@ namespace Skight.AgentPlatform
                             {
                                 var errorResult = $"Error executing tool '{name}': {execEx.Message}";
                                 Console.WriteLine($"  [Tool Runtime Error] {errorResult}");
+                                AgentTelemetry.TrackToolExecution(session.SessionId, session.UserId, session.TurnCount, name, 0, cleanArgs, errorResult, session.SessionId, turnSpanId, isError: true, exception: execEx);
                                 session.Messages.Add(new ChatRequestToolMessage(errorResult, callId));
                             }
                         }

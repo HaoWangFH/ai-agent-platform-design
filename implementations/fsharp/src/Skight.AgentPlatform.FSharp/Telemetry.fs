@@ -27,6 +27,8 @@ type FSharpTelemetryEvent = {
     Name: string
     Payload: string
     RawPayload: string
+    IsError: bool
+    ExceptionDetails: string option
 }
 
 type TelemetryMessage =
@@ -61,6 +63,8 @@ module AgentTelemetry =
                     DurationMs = evt.DurationMs
                     Name = evt.Name
                     Payload = evt.Payload
+                    IsError = evt.IsError
+                    ExceptionDetails = match evt.ExceptionDetails with Some ex -> ex | None -> null
                 |}
 
                 let jsonOptions = JsonSerializerOptions(Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping)
@@ -98,6 +102,12 @@ module AgentTelemetry =
                     activity.SetTag("gen_ai.turn.index", evt.TurnIndex) |> ignore
                     activity.SetTag("event.type", evt.EventType) |> ignore
                     activity.SetTag("payload", evt.Payload) |> ignore
+
+                    if evt.IsError then
+                        activity.SetStatus(ActivityStatusCode.Error, evt.Payload) |> ignore
+                        match evt.ExceptionDetails with
+                        | Some exStr -> activity.SetTag("exception.stacktrace", exStr) |> ignore
+                        | None -> ()
             with _ -> ()
 
     let flush () =
@@ -121,6 +131,8 @@ module AgentTelemetry =
                 Name = "agent.turn.start"
                 Payload = userInput
                 RawPayload = userInput
+                IsError = false
+                ExceptionDetails = None
             }
 
     let trackLlmCall (sessionId: string) (userId: string) (turnIndex: int) (model: string) (durationMs: int64) (responseContent: string) (toolCalls: ToolCall list) (traceId: string option) (parentSpanId: string option) =
@@ -142,10 +154,14 @@ module AgentTelemetry =
                 Name = "llm.call"
                 Payload = payloadText
                 RawPayload = sprintf "Content: %s\nToolCalls:\n%s" responseContent (String.concat "\n" toolDetails)
+                IsError = false
+                ExceptionDetails = None
             }
 
-    let trackToolExecution (sessionId: string) (userId: string) (turnIndex: int) (toolName: string) (durationMs: int64) (argsJson: string) (result: string) (traceId: string option) (parentSpanId: string option) =
+    let trackToolExecution (sessionId: string) (userId: string) (turnIndex: int) (toolName: string) (durationMs: int64) (argsJson: string) (result: string) (traceId: string option) (parentSpanId: string option) (isError: bool option) (exceptionDetails: string option) =
         if IsEnabled then
+            let err = defaultArg isError false
+            let payloadText = if err then sprintf "Tool '%s' Error: %s" toolName result else sprintf "Args: %s => Result: %s" argsJson result
             track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = defaultArg traceId sessionId
@@ -158,8 +174,10 @@ module AgentTelemetry =
                 Timestamp = DateTime.UtcNow
                 DurationMs = durationMs
                 Name = sprintf "tool.execution:%s" toolName
-                Payload = sprintf "Args: %s => Result: %s" argsJson result
+                Payload = payloadText
                 RawPayload = sprintf "Args: %s\nResult: %s" argsJson result
+                IsError = err
+                ExceptionDetails = exceptionDetails
             }
 
     let trackTurnEnd (sessionId: string) (userId: string) (turnIndex: int) (durationMs: int64) (finalResponse: string) (exitReason: string) (traceId: string option) (spanId: string option) =
@@ -178,4 +196,6 @@ module AgentTelemetry =
                 Name = "agent.turn.end"
                 Payload = sprintf "ExitReason: %s, ResponseLength: %d" exitReason finalResponse.Length
                 RawPayload = finalResponse
+                IsError = (exitReason <> "completed" && exitReason <> "text_response")
+                ExceptionDetails = None
             }

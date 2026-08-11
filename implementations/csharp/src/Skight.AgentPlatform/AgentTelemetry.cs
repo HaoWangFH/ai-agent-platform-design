@@ -72,6 +72,15 @@ namespace Skight.AgentPlatform
                     activity.SetTag("event.type", evt.EventType.ToString());
                     activity.SetTag("payload", evt.Payload);
 
+                    if (evt.IsError)
+                    {
+                        activity.SetStatus(ActivityStatusCode.Error, evt.Payload);
+                        if (!string.IsNullOrEmpty(evt.ExceptionDetails))
+                        {
+                            activity.SetTag("exception.stacktrace", evt.ExceptionDetails);
+                        }
+                    }
+
                     foreach (var attr in evt.Attributes)
                     {
                         activity.SetTag(attr.Key, attr.Value);
@@ -155,7 +164,7 @@ namespace Skight.AgentPlatform
             });
         }
 
-        public static void TrackToolExecution(string sessionId, string userId, int turnIndex, string toolName, long durationMs, string argsJson, string result, string? traceId = null, string? parentSpanId = null)
+        public static void TrackToolExecution(string sessionId, string userId, int turnIndex, string toolName, long durationMs, string argsJson, string result, string? traceId = null, string? parentSpanId = null, bool isError = false, Exception? exception = null)
         {
             if (!Options.Enabled) return;
             Track(new TelemetryEvent
@@ -169,8 +178,10 @@ namespace Skight.AgentPlatform
                 EventType = TelemetryEventType.ToolExecution,
                 DurationMs = durationMs,
                 Name = $"tool.execution:{toolName}",
-                Payload = $"Args: {argsJson} => Result: {result}",
-                RawPayload = $"Args: {argsJson}\nResult: {result}"
+                Payload = isError ? $"Tool '{toolName}' Error: {result}" : $"Args: {argsJson} => Result: {result}",
+                RawPayload = $"Args: {argsJson}\nResult: {result}",
+                IsError = isError,
+                ExceptionDetails = exception?.ToString()
             });
         }
 
@@ -224,7 +235,9 @@ namespace Skight.AgentPlatform
                             evt.Timestamp,
                             evt.DurationMs,
                             evt.Name,
-                            evt.Payload
+                            evt.Payload,
+                            evt.IsError,
+                            evt.ExceptionDetails
                         }, jsonOptions);
 
                         var fullJson = JsonSerializer.Serialize(evt, jsonOptions);

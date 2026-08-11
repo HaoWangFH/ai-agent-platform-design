@@ -16,7 +16,7 @@ let tests =
             let sessionId = sprintf "fs_sess_%s" (Guid.NewGuid().ToString("N"))
             let spanId = Guid.NewGuid().ToString("N")
             AgentTelemetry.trackTurnStart sessionId "fsharp_user" 1 "Run F# tests" (Some sessionId) (Some spanId)
-            AgentTelemetry.trackToolExecution sessionId "fsharp_user" 1 "terminal_execute" 25L "{}" "Success" (Some sessionId) (Some spanId)
+            AgentTelemetry.trackToolExecution sessionId "fsharp_user" 1 "terminal_execute" 25L "{}" "Success" (Some sessionId) (Some spanId) None None
             AgentTelemetry.trackTurnEnd sessionId "fsharp_user" 1 120L "Tests completed" "completed" (Some sessionId) (Some spanId)
             AgentTelemetry.flush()
 
