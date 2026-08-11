@@ -74,11 +74,13 @@ namespace Skight.AgentPlatform
             return clean.Length >= 16 ? clean[..16] : clean.PadLeft(16, '0');
         }
 
-        public static void Track(TelemetryEvent evt)
+        public static void Track(TelemetryEvent evt, bool createOtelActivity = true, string? otelActivityNameOverride = null)
         {
             if (!Options.Enabled) return;
             InitializeOpenTelemetry();
             _channel.Writer.TryWrite(evt);
+
+            if (!createOtelActivity) return;
 
             try
             {
@@ -94,9 +96,11 @@ namespace Skight.AgentPlatform
                     catch { }
                 }
 
+                var actName = otelActivityNameOverride ?? evt.Name;
+
                 var activity = parentContext != default
-                    ? ActivitySource.StartActivity(evt.Name, ActivityKind.Internal, parentContext)
-                    : ActivitySource.StartActivity(evt.Name, ActivityKind.Internal);
+                    ? ActivitySource.StartActivity(actName, ActivityKind.Internal, parentContext)
+                    : ActivitySource.StartActivity(actName, ActivityKind.Internal);
 
                 if (activity != null)
                 {
@@ -142,7 +146,7 @@ namespace Skight.AgentPlatform
                 EventType = TelemetryEventType.SessionStart,
                 Name = "agent.session.start",
                 Payload = $"Session started for user {userId}"
-            });
+            }, createOtelActivity: false);
         }
 
         public static void TrackTurnStart(string sessionId, string userId, int turnIndex, string userInput, string? traceId = null, string? spanId = null)
@@ -162,7 +166,7 @@ namespace Skight.AgentPlatform
                 Name = "agent.turn.start",
                 Payload = userInput,
                 RawPayload = userInput
-            });
+            }, createOtelActivity: false);
         }
 
         public static void TrackLlmCall(string sessionId, string userId, int turnIndex, string model, long durationMs, string responseContent, int toolCallsCount, string? traceId = null, string? parentSpanId = null)
@@ -184,11 +188,8 @@ namespace Skight.AgentPlatform
                     }
                 }
             }
-
-            string toolSummary = details.Count > 0 ? $" Requested ToolCalls: [{string.Join(", ", details)}]" : "";
-            string payloadText = string.IsNullOrEmpty(responseContent)
-                ? $"Model: {model}{toolSummary}"
-                : $"Model: {model}, Content: {responseContent}{toolSummary}";
+            var toolSummary = details.Count > 0 ? $" Requested ToolCalls: [{string.Join(", ", details)}]" : "";
+            var payloadText = string.IsNullOrEmpty(responseContent) ? $"Model: {model}{toolSummary}" : $"Model: {model}, Content: {responseContent}{toolSummary}";
 
             Track(new TelemetryEvent
             {
@@ -203,7 +204,7 @@ namespace Skight.AgentPlatform
                 Name = "llm.call",
                 Payload = payloadText,
                 RawPayload = $"Content: {responseContent}\nToolCalls:\n{string.Join("\n", details)}"
-            });
+            }, createOtelActivity: true);
         }
 
         public static void TrackToolExecution(string sessionId, string userId, int turnIndex, string toolName, long durationMs, string argsJson, string result, string? traceId = null, string? parentSpanId = null, bool isError = false, Exception? exception = null)
@@ -224,7 +225,7 @@ namespace Skight.AgentPlatform
                 RawPayload = $"Args: {argsJson}\nResult: {result}",
                 IsError = isError,
                 ExceptionDetails = exception?.ToString()
-            });
+            }, createOtelActivity: true);
         }
 
         public static void TrackTurnEnd(string sessionId, string userId, int turnIndex, long durationMs, string finalResponse, string exitReason, string? traceId = null, string? spanId = null)
@@ -243,7 +244,7 @@ namespace Skight.AgentPlatform
                 Name = "agent.turn.end",
                 Payload = $"ExitReason: {exitReason}, ResponseLength: {finalResponse.Length}",
                 RawPayload = finalResponse
-            });
+            }, createOtelActivity: true, otelActivityNameOverride: "agent.turn");
         }
 
         private static async Task ProcessEventsAsync()
