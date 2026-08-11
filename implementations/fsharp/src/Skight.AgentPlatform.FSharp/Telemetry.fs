@@ -3,6 +3,7 @@ namespace Skight.AgentPlatform.FSharp
 open System
 open System.IO
 open System.Text.Json
+open System.Diagnostics
 
 type TelemetryEventType =
     | SessionStart
@@ -36,6 +37,7 @@ module AgentTelemetry =
 
     let mutable IsEnabled = true
     let mutable LogDirectory = "logs/transcripts"
+    let activitySource = new ActivitySource("Skight.AgentPlatform.FSharp", "1.0.0")
 
     let private writeToFile (evt: FSharpTelemetryEvent) =
         try
@@ -87,6 +89,15 @@ module AgentTelemetry =
     let track (evt: FSharpTelemetryEvent) =
         if IsEnabled then
             agent.Post(EventMessage evt)
+            try
+                use activity = activitySource.StartActivity(evt.Name, ActivityKind.Internal)
+                if not (isNull activity) then
+                    activity.SetTag("gen_ai.session.id", evt.SessionId) |> ignore
+                    activity.SetTag("gen_ai.user.id", evt.UserId) |> ignore
+                    activity.SetTag("gen_ai.turn.index", evt.TurnIndex) |> ignore
+                    activity.SetTag("event.type", evt.EventType) |> ignore
+                    activity.SetTag("payload", evt.Payload) |> ignore
+            with _ -> ()
 
     let flush () =
         agent.PostAndReply(fun reply -> FlushMessage reply)

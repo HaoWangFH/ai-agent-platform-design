@@ -4,12 +4,17 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
 
 namespace Skight.AgentPlatform
 {
     public static class AgentTelemetry
     {
         public static TelemetryOptions Options { get; set; } = new TelemetryOptions();
+        public static readonly ActivitySource ActivitySource = new("Skight.AgentPlatform", "1.0.0");
+        private static TracerProvider? _tracerProvider;
 
         private static readonly Channel<TelemetryEvent> _channel = Channel.CreateUnbounded<TelemetryEvent>(new UnboundedChannelOptions
         {
@@ -22,13 +27,57 @@ namespace Skight.AgentPlatform
 
         static AgentTelemetry()
         {
+            InitializeOpenTelemetry();
             _processingTask = Task.Run(ProcessEventsAsync);
+        }
+
+        public static void InitializeOpenTelemetry()
+        {
+            if (!Options.Enabled || _tracerProvider != null) return;
+            try
+            {
+                var builder = Sdk.CreateTracerProviderBuilder()
+                    .AddSource("Skight.AgentPlatform");
+
+                if (!string.IsNullOrWhiteSpace(Options.OtlpEndpoint))
+                {
+                    builder.AddOtlpExporter(opt =>
+                    {
+                        opt.Endpoint = new Uri(Options.OtlpEndpoint);
+                    });
+                }
+
+                _tracerProvider = builder.Build();
+            }
+            catch
+            {
+                // Soft fallback if OTLP collector is not reachable locally
+            }
         }
 
         public static void Track(TelemetryEvent evt)
         {
             if (!Options.Enabled) return;
             _channel.Writer.TryWrite(evt);
+
+            try
+            {
+                using var activity = ActivitySource.StartActivity(evt.Name, ActivityKind.Internal);
+                if (activity != null)
+                {
+                    activity.SetTag("gen_ai.session.id", evt.SessionId);
+                    activity.SetTag("gen_ai.user.id", evt.UserId);
+                    activity.SetTag("gen_ai.turn.index", evt.TurnIndex);
+                    activity.SetTag("event.type", evt.EventType.ToString());
+                    activity.SetTag("payload", evt.Payload);
+
+                    foreach (var attr in evt.Attributes)
+                    {
+                        activity.SetTag(attr.Key, attr.Value);
+                    }
+                }
+            }
+            catch { }
         }
 
         public static void TrackSessionStart(string sessionId, string userId)
