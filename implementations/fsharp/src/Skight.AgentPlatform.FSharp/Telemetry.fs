@@ -137,7 +137,7 @@ module AgentTelemetry =
                 Timestamp = DateTime.UtcNow
                 DurationMs = durationMs
                 Name = "llm.call"
-                Payload = sprintf "Model: %s, ResponseLength: %d, ToolCalls: %d" model responseContent.Length toolCallsCount
+                Payload = if String.IsNullOrEmpty responseContent then sprintf "Model: %s, ToolCalls: %d (Tool call requested)" model toolCallsCount else sprintf "Model: %s, Content: %s" model responseContent
                 RawPayload = responseContent
             }
 
@@ -155,7 +155,7 @@ module AgentTelemetry =
                 Timestamp = DateTime.UtcNow
                 DurationMs = durationMs
                 Name = sprintf "tool.execution:%s" toolName
-                Payload = sprintf "Tool: %s, ResultLength: %d" toolName result.Length
+                Payload = sprintf "Args: %s => Result: %s" argsJson result
                 RawPayload = sprintf "Args: %s\nResult: %s" argsJson result
             }
 

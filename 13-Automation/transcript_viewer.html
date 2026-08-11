@@ -117,17 +117,38 @@
             word-break: break-all;
             color: #e2e8f0;
         }
+
+        details summary {
+            cursor: pointer;
+            color: var(--accent-blue);
+            font-weight: 600;
+            margin-top: 8px;
+            font-size: 0.85rem;
+        }
+
+        .raw-payload {
+            background: #020617;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #cbd5e1;
+            border: 1px solid #1e293b;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🌲 Agent Call Stack & Trace Tree Viewer</h1>
-            <p style="color: var(--text-muted); margin: 0;">Visualize business workflow call stacks (LLM calls, Tool calls, Subagent delegations) with parent-child span trees.</p>
+            <p style="color: var(--text-muted); margin: 0;">Inspect <code>transcript.jsonl</code> (compact) or <code>transcript_full.jsonl</code> (full detail with un-truncated prompts & tool arguments).</p>
         </header>
 
         <div class="drop-zone" id="dropZone">
-            <p>📂 Drag & Drop <code>transcript.jsonl</code> here, or click to browse</p>
+            <p>📂 Drag & Drop <code>transcript.jsonl</code> or <code>transcript_full.jsonl</code> here, or click to browse</p>
             <input type="file" id="fileInput" accept=".jsonl,.txt" style="display: none;">
         </div>
 
@@ -171,7 +192,8 @@
                     const name = evt.Name || 'Step';
                     const timestamp = evt.Timestamp ? new Date(evt.Timestamp).toLocaleTimeString() : '';
                     const duration = evt.DurationMs ? ` (${evt.DurationMs} ms)` : '';
-                    const payload = evt.Payload || evt.RawPayload || '';
+                    const payload = evt.Payload || '';
+                    const rawPayload = evt.RawPayload || (evt.Attributes ? JSON.stringify(evt.Attributes, null, 2) : '');
                     const spanId = evt.SpanId ? `Span: ${evt.SpanId.substring(0, 8)}` : '';
                     const parentSpanId = evt.ParentSpanId ? `Parent: ${evt.ParentSpanId.substring(0, 8)}` : '';
 
@@ -189,6 +211,12 @@
                             </div>
                         </div>
                         <div class="payload">${escapeHtml(payload)}</div>
+                        ${rawPayload ? `
+                            <details>
+                                <summary>🔍 View Full Raw Payload / Attributes</summary>
+                                <div class="raw-payload">${escapeHtml(rawPayload)}</div>
+                            </details>
+                        ` : ''}
                     `;
                     eventsContainer.appendChild(card);
                 } catch (err) { }

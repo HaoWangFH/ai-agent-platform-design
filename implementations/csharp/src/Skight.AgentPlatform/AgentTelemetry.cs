@@ -127,7 +127,7 @@ namespace Skight.AgentPlatform
                 EventType = TelemetryEventType.LlmCall,
                 DurationMs = durationMs,
                 Name = "llm.call",
-                Payload = $"Model: {model}, ResponseLength: {responseContent.Length}, ToolCalls: {toolCallsCount}",
+                Payload = string.IsNullOrEmpty(responseContent) ? $"Model: {model}, ToolCalls: {toolCallsCount} (Tool call requested)" : $"Model: {model}, Content: {responseContent}",
                 RawPayload = responseContent
             });
         }
@@ -146,7 +146,7 @@ namespace Skight.AgentPlatform
                 EventType = TelemetryEventType.ToolExecution,
                 DurationMs = durationMs,
                 Name = $"tool.execution:{toolName}",
-                Payload = $"Tool: {toolName}, ResultLength: {result.Length}",
+                Payload = $"Args: {argsJson} => Result: {result}",
                 RawPayload = $"Args: {argsJson}\nResult: {result}"
             });
         }
