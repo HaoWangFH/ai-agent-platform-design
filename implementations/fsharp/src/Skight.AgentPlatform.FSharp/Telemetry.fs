@@ -63,8 +63,9 @@ module AgentTelemetry =
                     Payload = evt.Payload
                 |}
 
-                let compactJson = JsonSerializer.Serialize compactObj
-                let fullJson = JsonSerializer.Serialize evt
+                let jsonOptions = JsonSerializerOptions(Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping)
+                let compactJson = JsonSerializer.Serialize(compactObj, jsonOptions)
+                let fullJson = JsonSerializer.Serialize(evt, jsonOptions)
 
                 File.AppendAllText(compactPath, compactJson + "\n")
                 File.AppendAllText(fullPath, fullJson + "\n")

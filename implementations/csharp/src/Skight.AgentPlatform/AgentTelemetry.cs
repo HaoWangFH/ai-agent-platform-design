@@ -187,6 +187,7 @@ namespace Skight.AgentPlatform
                         var compactPath = Path.Combine(dir, "transcript.jsonl");
                         var fullPath = Path.Combine(dir, "transcript_full.jsonl");
 
+                        var jsonOptions = new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
                         var compactJson = JsonSerializer.Serialize(new
                         {
                             evt.EventId,
@@ -201,9 +202,9 @@ namespace Skight.AgentPlatform
                             evt.DurationMs,
                             evt.Name,
                             evt.Payload
-                        });
+                        }, jsonOptions);
 
-                        var fullJson = JsonSerializer.Serialize(evt);
+                        var fullJson = JsonSerializer.Serialize(evt, jsonOptions);
 
                         await File.AppendAllTextAsync(compactPath, compactJson + "\n", _cts.Token);
                         await File.AppendAllTextAsync(fullPath, fullJson + "\n", _cts.Token);
