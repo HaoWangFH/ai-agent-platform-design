@@ -7,6 +7,9 @@ open System.Diagnostics
 open OpenTelemetry
 open OpenTelemetry.Trace
 
+open System.Collections.Concurrent
+open OpenTelemetry.Resources
+
 type TelemetryEventType =
     | SessionStart
     | TurnStart
@@ -44,6 +47,7 @@ module AgentTelemetry =
     let mutable OtlpEndpoint = "http://localhost:4317"
     let mutable private tracerProvider: TracerProvider option = None
     let activitySource = new ActivitySource("Skight.AgentPlatform.FSharp", "1.0.0")
+    let private activeTurnActivities = ConcurrentDictionary<string, Activity>()
 
     let initOpenTelemetry (endpoint: string option) =
         if IsEnabled && tracerProvider.IsNone then
@@ -53,8 +57,12 @@ module AgentTelemetry =
                     if not (String.IsNullOrWhiteSpace envEp) then envEp
                     else defaultArg endpoint OtlpEndpoint
 
+                let envSvcName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME")
+                let serviceName = if not (String.IsNullOrWhiteSpace envSvcName) then envSvcName else "fsharp-agent-platform"
+
                 let builder =
                     Sdk.CreateTracerProviderBuilder()
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName))
                         .AddSource("Skight.AgentPlatform.FSharp")
                         .AddOtlpExporter(fun opt -> opt.Endpoint <- Uri(ep))
                 tracerProvider <- Some(builder.Build())
@@ -121,52 +129,10 @@ module AgentTelemetry =
         if clean.Length >= 16 then clean.Substring(0, 16)
         else clean.PadLeft(16, '0')
 
-    let trackWithOtel (evt: FSharpTelemetryEvent) (createOtelActivity: bool) (otelActivityNameOverride: string option) =
+    let track (evt: FSharpTelemetryEvent) =
         if IsEnabled then
             initOpenTelemetry None
             agent.Post(EventMessage evt)
-            if createOtelActivity then
-                try
-                    let mutable parentContext = ActivityContext()
-                    match evt.ParentSpanId with
-                    | Some parentSpanIdStr when not (String.IsNullOrWhiteSpace evt.TraceId) ->
-                        try
-                            let traceId = ActivityTraceId.CreateFromString(toW3cTraceId(evt.TraceId).AsSpan())
-                            let spanId = ActivitySpanId.CreateFromString(toW3cSpanId(parentSpanIdStr).AsSpan())
-                            parentContext <- ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded)
-                        with _ -> ()
-                    | _ -> ()
-
-                    let actName = defaultArg otelActivityNameOverride evt.Name
-
-                    let activity =
-                        if parentContext <> ActivityContext() then
-                            activitySource.StartActivity(actName, ActivityKind.Internal, parentContext)
-                        else
-                            activitySource.StartActivity(actName, ActivityKind.Internal)
-
-                    if not (isNull activity) then
-                        activity.SetTag("gen_ai.session.id", evt.SessionId) |> ignore
-                        activity.SetTag("gen_ai.user.id", evt.UserId) |> ignore
-                        activity.SetTag("gen_ai.turn.index", evt.TurnIndex) |> ignore
-                        activity.SetTag("event.type", evt.EventType) |> ignore
-                        activity.SetTag("payload", evt.Payload) |> ignore
-
-                        if evt.IsError then
-                            activity.SetStatus(ActivityStatusCode.Error, evt.Payload) |> ignore
-                            match evt.ExceptionDetails with
-                            | Some exStr -> activity.SetTag("exception.stacktrace", exStr) |> ignore
-                            | None -> ()
-
-                        if evt.DurationMs > 0L then
-                            activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(float evt.DurationMs)) |> ignore
-
-                        activity.Stop()
-                        activity.Dispose()
-                with _ -> ()
-
-    let track (evt: FSharpTelemetryEvent) =
-        trackWithOtel evt true None
 
     let flush () =
         agent.PostAndReply(fun reply -> FlushMessage reply)
@@ -176,9 +142,10 @@ module AgentTelemetry =
 
     let trackTurnStart (sessionId: string) (userId: string) (turnIndex: int) (userInput: string) (traceId: string option) (spanId: string option) =
         if IsEnabled then
+            initOpenTelemetry None
             let tid = defaultArg traceId sessionId
             let sid = defaultArg spanId (Guid.NewGuid().ToString("N"))
-            trackWithOtel {
+            track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = tid
                 SpanId = sid
@@ -194,14 +161,25 @@ module AgentTelemetry =
                 RawPayload = userInput
                 IsError = false
                 ExceptionDetails = None
-            } false None
+            }
+
+            try
+                let act = activitySource.StartActivity("agent.turn", ActivityKind.Internal)
+                if not (isNull act) then
+                    act.SetTag("gen_ai.session.id", sessionId) |> ignore
+                    act.SetTag("gen_ai.user.id", userId) |> ignore
+                    act.SetTag("gen_ai.turn.index", turnIndex) |> ignore
+                    act.SetTag("payload", userInput) |> ignore
+                    activeTurnActivities.[sid] <- act
+            with _ -> ()
 
     let trackLlmCall (sessionId: string) (userId: string) (turnIndex: int) (model: string) (durationMs: int64) (responseContent: string) (toolCalls: ToolCall list) (traceId: string option) (parentSpanId: string option) =
         if IsEnabled then
+            initOpenTelemetry None
             let toolDetails = toolCalls |> List.map (fun tc -> sprintf "%s(%s)" (ToolName.value tc.Name) tc.ArgumentsJson)
             let toolSummary = if toolDetails.IsEmpty then "" else sprintf " Requested ToolCalls: [%s]" (String.concat ", " toolDetails)
             let payloadText = if String.IsNullOrEmpty responseContent then sprintf "Model: %s%s" model toolSummary else sprintf "Model: %s, Content: %s%s" model responseContent toolSummary
-            trackWithOtel {
+            track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = defaultArg traceId sessionId
                 SpanId = Guid.NewGuid().ToString("N")
@@ -217,13 +195,38 @@ module AgentTelemetry =
                 RawPayload = sprintf "Content: %s\nToolCalls:\n%s" responseContent (String.concat "\n" toolDetails)
                 IsError = false
                 ExceptionDetails = None
-            } true None
+            }
+
+            try
+                let mutable parentContext = ActivityContext()
+                match parentSpanId with
+                | Some pid when activeTurnActivities.ContainsKey(pid) ->
+                    parentContext <- activeTurnActivities.[pid].Context
+                | _ -> ()
+
+                let activity =
+                    if parentContext <> ActivityContext() then
+                        activitySource.StartActivity("llm.call", ActivityKind.Internal, parentContext)
+                    else
+                        activitySource.StartActivity("llm.call", ActivityKind.Internal)
+
+                if not (isNull activity) then
+                    activity.SetTag("gen_ai.session.id", sessionId) |> ignore
+                    activity.SetTag("gen_ai.user.id", userId) |> ignore
+                    activity.SetTag("gen_ai.turn.index", turnIndex) |> ignore
+                    activity.SetTag("payload", payloadText) |> ignore
+                    if durationMs > 0L then
+                        activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(float durationMs)) |> ignore
+                    activity.Stop()
+                    activity.Dispose()
+            with _ -> ()
 
     let trackToolExecution (sessionId: string) (userId: string) (turnIndex: int) (toolName: string) (durationMs: int64) (argsJson: string) (result: string) (traceId: string option) (parentSpanId: string option) (isError: bool option) (exceptionDetails: string option) =
         if IsEnabled then
+            initOpenTelemetry None
             let err = defaultArg isError false
             let payloadText = if err then sprintf "Tool '%s' Error: %s" toolName result else sprintf "Args: %s => Result: %s" argsJson result
-            trackWithOtel {
+            track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = defaultArg traceId sessionId
                 SpanId = Guid.NewGuid().ToString("N")
@@ -239,13 +242,41 @@ module AgentTelemetry =
                 RawPayload = sprintf "Args: %s\nResult: %s" argsJson result
                 IsError = err
                 ExceptionDetails = exceptionDetails
-            } true None
+            }
+
+            try
+                let mutable parentContext = ActivityContext()
+                match parentSpanId with
+                | Some pid when activeTurnActivities.ContainsKey(pid) ->
+                    parentContext <- activeTurnActivities.[pid].Context
+                | _ -> ()
+
+                let actName = sprintf "tool.execution:%s" toolName
+                let activity =
+                    if parentContext <> ActivityContext() then
+                        activitySource.StartActivity(actName, ActivityKind.Internal, parentContext)
+                    else
+                        activitySource.StartActivity(actName, ActivityKind.Internal)
+
+                if not (isNull activity) then
+                    activity.SetTag("gen_ai.session.id", sessionId) |> ignore
+                    activity.SetTag("gen_ai.user.id", userId) |> ignore
+                    activity.SetTag("gen_ai.turn.index", turnIndex) |> ignore
+                    activity.SetTag("payload", payloadText) |> ignore
+                    if err then
+                        activity.SetStatus(ActivityStatusCode.Error, payloadText) |> ignore
+                    if durationMs > 0L then
+                        activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(float durationMs)) |> ignore
+                    activity.Stop()
+                    activity.Dispose()
+            with _ -> ()
 
     let trackTurnEnd (sessionId: string) (userId: string) (turnIndex: int) (durationMs: int64) (finalResponse: string) (exitReason: string) (traceId: string option) (spanId: string option) =
         if IsEnabled then
+            initOpenTelemetry None
             let tid = defaultArg traceId sessionId
             let sid = defaultArg spanId (Guid.NewGuid().ToString("N"))
-            trackWithOtel {
+            track {
                 EventId = Guid.NewGuid().ToString("N")
                 TraceId = tid
                 SpanId = sid
@@ -261,4 +292,17 @@ module AgentTelemetry =
                 RawPayload = finalResponse
                 IsError = (exitReason <> "completed" && exitReason <> "text_response")
                 ExceptionDetails = None
-            } true (Some "agent.turn")
+            }
+
+            try
+                match activeTurnActivities.TryRemove(sid) with
+                | true, act when not (isNull act) ->
+                    act.SetTag("payload", sprintf "ExitReason: %s, ResponseLength: %d" exitReason finalResponse.Length) |> ignore
+                    if exitReason <> "completed" && exitReason <> "text_response" then
+                        act.SetStatus(ActivityStatusCode.Error, sprintf "ExitReason: %s" exitReason) |> ignore
+                    if durationMs > 0L then
+                        act.SetEndTime(act.StartTimeUtc.AddMilliseconds(float durationMs)) |> ignore
+                    act.Stop()
+                    act.Dispose()
+                | _ -> ()
+            with _ -> ()

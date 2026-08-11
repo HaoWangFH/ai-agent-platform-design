@@ -5,26 +5,24 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using Azure.AI.OpenAI;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
+using OpenTelemetry.Resources;
 
 namespace Skight.AgentPlatform
 {
     public static class AgentTelemetry
     {
         public static TelemetryOptions Options { get; set; } = new TelemetryOptions();
-        public static readonly ActivitySource ActivitySource = new("Skight.AgentPlatform", "1.0.0");
         private static TracerProvider? _tracerProvider;
-
-        private static readonly Channel<TelemetryEvent> _channel = Channel.CreateUnbounded<TelemetryEvent>(new UnboundedChannelOptions
-        {
-            SingleReader = true,
-            SingleWriter = false
-        });
-
+        private static readonly ActivitySource ActivitySource = new ActivitySource("Skight.AgentPlatform", "1.0.0");
+        private static readonly Channel<TelemetryEvent> _channel = Channel.CreateUnbounded<TelemetryEvent>();
         private static readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private static readonly Task _processingTask;
+        private static readonly ConcurrentDictionary<string, Activity> ActiveTurnActivities = new();
 
         public static async Task FlushAsync()
         {
@@ -43,97 +41,32 @@ namespace Skight.AgentPlatform
         {
             if (!Options.Enabled || _tracerProvider != null) return;
             try
-                {
-                    var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
-                                ?? (string.IsNullOrWhiteSpace(Options.OtlpEndpoint) ? "http://localhost:4317" : Options.OtlpEndpoint);
+            {
+                var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+                            ?? (string.IsNullOrWhiteSpace(Options.OtlpEndpoint) ? "http://localhost:4317" : Options.OtlpEndpoint);
+                var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? "csharp-agent-platform";
 
-                    var builder = Sdk.CreateTracerProviderBuilder()
-                        .AddSource("Skight.AgentPlatform")
-                        .AddOtlpExporter(opt =>
-                        {
-                            opt.Endpoint = new Uri(endpoint);
-                        });
+                var builder = Sdk.CreateTracerProviderBuilder()
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName))
+                    .AddSource("Skight.AgentPlatform")
+                    .AddOtlpExporter(opt =>
+                    {
+                        opt.Endpoint = new Uri(endpoint);
+                    });
 
-                    _tracerProvider = builder.Build();
-                }
+                _tracerProvider = builder.Build();
+            }
             catch
             {
                 // Soft fallback if OTLP collector is not reachable locally
             }
         }
 
-        private static string ToW3cTraceId(string idStr)
-        {
-            var clean = string.IsNullOrEmpty(idStr) ? "" : idStr.Replace("-", "");
-            return clean.Length >= 32 ? clean[..32] : clean.PadLeft(32, '0');
-        }
-
-        private static string ToW3cSpanId(string idStr)
-        {
-            var clean = string.IsNullOrEmpty(idStr) ? "" : idStr.Replace("-", "");
-            return clean.Length >= 16 ? clean[..16] : clean.PadLeft(16, '0');
-        }
-
-        public static void Track(TelemetryEvent evt, bool createOtelActivity = true, string? otelActivityNameOverride = null)
+        public static void Track(TelemetryEvent evt)
         {
             if (!Options.Enabled) return;
             InitializeOpenTelemetry();
             _channel.Writer.TryWrite(evt);
-
-            if (!createOtelActivity) return;
-
-            try
-            {
-                ActivityContext parentContext = default;
-                if (!string.IsNullOrEmpty(evt.TraceId) && !string.IsNullOrEmpty(evt.ParentSpanId))
-                {
-                    try
-                    {
-                        var traceId = ActivityTraceId.CreateFromString(ToW3cTraceId(evt.TraceId).AsSpan());
-                        var parentSpanId = ActivitySpanId.CreateFromString(ToW3cSpanId(evt.ParentSpanId).AsSpan());
-                        parentContext = new ActivityContext(traceId, parentSpanId, ActivityTraceFlags.Recorded);
-                    }
-                    catch { }
-                }
-
-                var actName = otelActivityNameOverride ?? evt.Name;
-
-                var activity = parentContext != default
-                    ? ActivitySource.StartActivity(actName, ActivityKind.Internal, parentContext)
-                    : ActivitySource.StartActivity(actName, ActivityKind.Internal);
-
-                if (activity != null)
-                {
-                    activity.SetTag("gen_ai.session.id", evt.SessionId);
-                    activity.SetTag("gen_ai.user.id", evt.UserId);
-                    activity.SetTag("gen_ai.turn.index", evt.TurnIndex);
-                    activity.SetTag("event.type", evt.EventType.ToString());
-                    activity.SetTag("payload", evt.Payload);
-
-                    if (evt.IsError)
-                    {
-                        activity.SetStatus(ActivityStatusCode.Error, evt.Payload);
-                        if (!string.IsNullOrEmpty(evt.ExceptionDetails))
-                        {
-                            activity.SetTag("exception.stacktrace", evt.ExceptionDetails);
-                        }
-                    }
-
-                    foreach (var attr in evt.Attributes)
-                    {
-                        activity.SetTag(attr.Key, attr.Value);
-                    }
-
-                    if (evt.DurationMs > 0)
-                    {
-                        activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(evt.DurationMs));
-                    }
-
-                    activity.Stop();
-                    activity.Dispose();
-                }
-            }
-            catch { }
         }
 
         public static void TrackSessionStart(string sessionId, string userId)
@@ -146,12 +79,13 @@ namespace Skight.AgentPlatform
                 EventType = TelemetryEventType.SessionStart,
                 Name = "agent.session.start",
                 Payload = $"Session started for user {userId}"
-            }, createOtelActivity: false);
+            });
         }
 
         public static void TrackTurnStart(string sessionId, string userId, int turnIndex, string userInput, string? traceId = null, string? spanId = null)
         {
             if (!Options.Enabled) return;
+            InitializeOpenTelemetry();
             var tid = traceId ?? sessionId;
             var sid = spanId ?? Guid.NewGuid().ToString("N");
             Track(new TelemetryEvent
@@ -166,7 +100,21 @@ namespace Skight.AgentPlatform
                 Name = "agent.turn.start",
                 Payload = userInput,
                 RawPayload = userInput
-            }, createOtelActivity: false);
+            });
+
+            try
+            {
+                var act = ActivitySource.StartActivity("agent.turn", ActivityKind.Internal);
+                if (act != null)
+                {
+                    act.SetTag("gen_ai.session.id", sessionId);
+                    act.SetTag("gen_ai.user.id", userId);
+                    act.SetTag("gen_ai.turn.index", turnIndex);
+                    act.SetTag("payload", userInput);
+                    ActiveTurnActivities[sid] = act;
+                }
+            }
+            catch { }
         }
 
         public static void TrackLlmCall(string sessionId, string userId, int turnIndex, string model, long durationMs, string responseContent, int toolCallsCount, string? traceId = null, string? parentSpanId = null)
@@ -177,6 +125,7 @@ namespace Skight.AgentPlatform
         public static void TrackLlmCall(string sessionId, string userId, int turnIndex, string model, long durationMs, string responseContent, IReadOnlyList<ChatCompletionsToolCall>? toolCalls, string? traceId = null, string? parentSpanId = null)
         {
             if (!Options.Enabled) return;
+            InitializeOpenTelemetry();
             var details = new List<string>();
             if (toolCalls != null)
             {
@@ -204,12 +153,42 @@ namespace Skight.AgentPlatform
                 Name = "llm.call",
                 Payload = payloadText,
                 RawPayload = $"Content: {responseContent}\nToolCalls:\n{string.Join("\n", details)}"
-            }, createOtelActivity: true);
+            });
+
+            try
+            {
+                ActivityContext parentContext = default;
+                if (!string.IsNullOrEmpty(parentSpanId) && ActiveTurnActivities.TryGetValue(parentSpanId, out var parentAct))
+                {
+                    parentContext = parentAct.Context;
+                }
+
+                var activity = parentContext != default
+                    ? ActivitySource.StartActivity("llm.call", ActivityKind.Internal, parentContext)
+                    : ActivitySource.StartActivity("llm.call", ActivityKind.Internal);
+
+                if (activity != null)
+                {
+                    activity.SetTag("gen_ai.session.id", sessionId);
+                    activity.SetTag("gen_ai.user.id", userId);
+                    activity.SetTag("gen_ai.turn.index", turnIndex);
+                    activity.SetTag("payload", payloadText);
+                    if (durationMs > 0)
+                    {
+                        activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(durationMs));
+                    }
+                    activity.Stop();
+                    activity.Dispose();
+                }
+            }
+            catch { }
         }
 
         public static void TrackToolExecution(string sessionId, string userId, int turnIndex, string toolName, long durationMs, string argsJson, string result, string? traceId = null, string? parentSpanId = null, bool isError = false, Exception? exception = null)
         {
             if (!Options.Enabled) return;
+            InitializeOpenTelemetry();
+            var payloadText = isError ? $"Tool '{toolName}' Error: {result}" : $"Args: {argsJson} => Result: {result}";
             Track(new TelemetryEvent
             {
                 TraceId = traceId ?? sessionId,
@@ -221,20 +200,56 @@ namespace Skight.AgentPlatform
                 EventType = TelemetryEventType.ToolExecution,
                 DurationMs = durationMs,
                 Name = $"tool.execution:{toolName}",
-                Payload = isError ? $"Tool '{toolName}' Error: {result}" : $"Args: {argsJson} => Result: {result}",
+                Payload = payloadText,
                 RawPayload = $"Args: {argsJson}\nResult: {result}",
                 IsError = isError,
                 ExceptionDetails = exception?.ToString()
-            }, createOtelActivity: true);
+            });
+
+            try
+            {
+                ActivityContext parentContext = default;
+                if (!string.IsNullOrEmpty(parentSpanId) && ActiveTurnActivities.TryGetValue(parentSpanId, out var parentAct))
+                {
+                    parentContext = parentAct.Context;
+                }
+
+                var actName = $"tool.execution:{toolName}";
+                var activity = parentContext != default
+                    ? ActivitySource.StartActivity(actName, ActivityKind.Internal, parentContext)
+                    : ActivitySource.StartActivity(actName, ActivityKind.Internal);
+
+                if (activity != null)
+                {
+                    activity.SetTag("gen_ai.session.id", sessionId);
+                    activity.SetTag("gen_ai.user.id", userId);
+                    activity.SetTag("gen_ai.turn.index", turnIndex);
+                    activity.SetTag("payload", payloadText);
+                    if (isError)
+                    {
+                        activity.SetStatus(ActivityStatusCode.Error, payloadText);
+                    }
+                    if (durationMs > 0)
+                    {
+                        activity.SetEndTime(activity.StartTimeUtc.AddMilliseconds(durationMs));
+                    }
+                    activity.Stop();
+                    activity.Dispose();
+                }
+            }
+            catch { }
         }
 
         public static void TrackTurnEnd(string sessionId, string userId, int turnIndex, long durationMs, string finalResponse, string exitReason, string? traceId = null, string? spanId = null)
         {
             if (!Options.Enabled) return;
+            InitializeOpenTelemetry();
+            var tid = traceId ?? sessionId;
+            var sid = spanId ?? Guid.NewGuid().ToString("N");
             Track(new TelemetryEvent
             {
-                TraceId = traceId ?? sessionId,
-                SpanId = spanId ?? Guid.NewGuid().ToString("N"),
+                TraceId = tid,
+                SpanId = sid,
                 ParentSpanId = null,
                 SessionId = sessionId,
                 UserId = userId,
@@ -244,7 +259,26 @@ namespace Skight.AgentPlatform
                 Name = "agent.turn.end",
                 Payload = $"ExitReason: {exitReason}, ResponseLength: {finalResponse.Length}",
                 RawPayload = finalResponse
-            }, createOtelActivity: true, otelActivityNameOverride: "agent.turn");
+            });
+
+            try
+            {
+                if (ActiveTurnActivities.TryRemove(sid, out var act) && act != null)
+                {
+                    act.SetTag("payload", $"ExitReason: {exitReason}, ResponseLength: {finalResponse.Length}");
+                    if (exitReason != "completed" && exitReason != "text_response")
+                    {
+                        act.SetStatus(ActivityStatusCode.Error, $"ExitReason: {exitReason}");
+                    }
+                    if (durationMs > 0)
+                    {
+                        act.SetEndTime(act.StartTimeUtc.AddMilliseconds(durationMs));
+                    }
+                    act.Stop();
+                    act.Dispose();
+                }
+            }
+            catch { }
         }
 
         private static async Task ProcessEventsAsync()
