@@ -292,14 +292,16 @@ module Program =
 
         let initialSession = agent.CreateInitialSession()
         try
-            if argv.Length > 0 then
-                let promptFromArgs = String.Join(" ", argv)
-                printfn "Processing prompt: %s" promptFromArgs
-                let _ = executeTurn promptFromArgs initialSession
-                AgentTelemetry.flush ()
-                0
-            else
-                loop initialSession
+            let sessionToUse =
+                if argv.Length > 0 then
+                    let promptFromArgs = String.Join(" ", argv)
+                    printfn "Processing prompt: %s" promptFromArgs
+                    let nextSess = executeTurn promptFromArgs initialSession
+                    AgentTelemetry.flush ()
+                    nextSess
+                else
+                    initialSession
+            loop sessionToUse
         finally
             match mcpClientOpt with
             | Some client -> client.Dispose()

@@ -154,11 +154,31 @@ namespace Skight.AgentPlatform
             
             Console.WriteLine("Agent is ready. Type 'exit' or 'quit' to stop.");
 
+            if (args.Length > 0)
+            {
+                var promptFromArgs = string.Join(" ", args);
+                Console.WriteLine($"Processing prompt: {promptFromArgs}");
+                try
+                {
+                    var result = await agent.RunAsync(promptFromArgs, mockLlmCaller);
+                    if (!string.IsNullOrWhiteSpace(result.FinalResponse))
+                    {
+                        Console.WriteLine($"Assistant: {result.FinalResponse}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+                await AgentTelemetry.FlushAsync();
+            }
+
             while (true)
             {
                 Console.Write("> ");
                 var input = Console.ReadLine();
 
+                if (input == null) break;
                 if (string.IsNullOrWhiteSpace(input)) continue;
                 if (input.Trim().ToLower() is "exit" or "quit") break;
 
