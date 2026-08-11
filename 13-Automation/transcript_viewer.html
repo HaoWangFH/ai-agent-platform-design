@@ -150,11 +150,18 @@
             border: 1px solid #1e293b;
         }
 
+        /* Stack Trace Syntax Highlighting */
         .stack-trace {
-            background: #450a0a;
+            background: #18080a;
             color: #fca5a5;
             border: 1px solid #7f1d1d;
+            line-height: 1.5;
         }
+
+        .st-ex { color: #f472b6; font-weight: bold; }       /* Exception Name (Pink) */
+        .st-method { color: #38bdf8; font-weight: 600; }   /* Class/Method Name (Cyan) */
+        .st-file { color: #4ade80; text-decoration: underline; } /* Source File Path (Green) */
+        .st-line { color: #fbbf24; font-weight: bold; }    /* Line Number (Yellow) */
     </style>
 </head>
 <body>
@@ -203,7 +210,7 @@
                     const card = document.createElement('div');
                     
                     const isChild = !!evt.ParentSpanId;
-                    const isError = evt.IsError || (evt.Payload && evt.Payload.includes('Error:'));
+                    const isError = evt.IsError === true;
                     card.className = `event-card ${isChild ? 'is-child' : ''} ${isError ? 'has-error' : ''}`;
 
                     const eventType = evt.EventType || 'Event';
@@ -240,9 +247,9 @@
                             </details>
                         ` : ''}
                         ${exceptionDetails ? `
-                            <details class="error-details">
+                            <details class="error-details" open>
                                 <summary>💥 Stack Trace / Technical Exception Details</summary>
-                                <div class="raw-payload stack-trace">${escapeHtml(exceptionDetails)}</div>
+                                <div class="raw-payload stack-trace">${formatStackTrace(exceptionDetails)}</div>
                             </details>
                         ` : ''}
                     `;
@@ -253,6 +260,14 @@
 
         function escapeHtml(text) {
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function formatStackTrace(text) {
+            if (!text) return '';
+            return escapeHtml(text)
+                .replace(/^(System\.[a-zA-Z0-9_\.]+|[a-zA-Z0-9_\.]*Exception:?)/gm, '<span class="st-ex">$1</span>')
+                .replace(/\bat\s+([a-zA-Z0-9_\.\#\+`<>]+)/g, 'at <span class="st-method">$1</span>')
+                .replace(/\bin\s+([a-zA-Z]:\\[^:\n]+):(line\s+\d+)/g, 'in <span class="st-file">$1</span>:<span class="st-line">$2</span>');
         }
     </script>
 </body>
